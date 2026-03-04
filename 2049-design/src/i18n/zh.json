@@ -20,7 +20,7 @@
   },
   "params": {
     "presets": "预设模板",
-    "stripeDensity": "条纹密度",
+    "stripeDensity": "条纹分层",
     "displacement": "条纹偏移",
     "rgbSplit": "RGB 颜色",
     "clipShape": "画符形状",

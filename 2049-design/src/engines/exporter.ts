@@ -1,9 +1,8 @@
 import { GlitchParams, AsciiParams, EffectType } from '@/types'
 
-export async function exportPNG(canvas: HTMLCanvasElement, filename: string, scale = 1): Promise<void> {
-  const scaled = scaleCanvas(canvas, scale)
+export async function exportPNG(canvas: HTMLCanvasElement, filename: string): Promise<void> {
   return new Promise((resolve) => {
-    scaled.toBlob((blob) => {
+    canvas.toBlob((blob) => {
       if (!blob) return
       downloadBlob(blob, `${filename}.png`)
       resolve()
@@ -11,10 +10,9 @@ export async function exportPNG(canvas: HTMLCanvasElement, filename: string, sca
   })
 }
 
-export async function exportJPEG(canvas: HTMLCanvasElement, filename: string, scale = 1): Promise<void> {
-  const scaled = scaleCanvas(canvas, scale)
+export async function exportJPEG(canvas: HTMLCanvasElement, filename: string): Promise<void> {
   return new Promise((resolve) => {
-    scaled.toBlob((blob) => {
+    canvas.toBlob((blob) => {
       if (!blob) return
       downloadBlob(blob, `${filename}.jpg`)
       resolve()
@@ -22,35 +20,21 @@ export async function exportJPEG(canvas: HTMLCanvasElement, filename: string, sc
   })
 }
 
-export async function exportSVG(canvas: HTMLCanvasElement, filename: string, scale = 1): Promise<void> {
-  const scaled = scaleCanvas(canvas, scale)
-  const dataURL = scaled.toDataURL('image/png')
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${scaled.width}" height="${scaled.height}">
-  <image href="${dataURL}" width="${scaled.width}" height="${scaled.height}"/>
+export async function exportSVG(canvas: HTMLCanvasElement, filename: string): Promise<void> {
+  const dataURL = canvas.toDataURL('image/png')
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
+  <image href="${dataURL}" width="${canvas.width}" height="${canvas.height}"/>
 </svg>`
   const blob = new Blob([svg], { type: 'image/svg+xml' })
   downloadBlob(blob, `${filename}.svg`)
 }
 
-export async function exportPDF(canvas: HTMLCanvasElement, _filename: string, scale = 1): Promise<void> {
-  const scaled = scaleCanvas(canvas, scale)
-  const dataURL = scaled.toDataURL('image/png')
+export async function exportPDF(canvas: HTMLCanvasElement, _filename: string): Promise<void> {
+  const dataURL = canvas.toDataURL('image/png')
   const win = window.open('', '_blank')
   if (!win) return
-  win.document.write(`<!DOCTYPE html><html><head><title>Export PDF</title><style>@media print{@page{size:${scaled.width}px ${scaled.height}px;margin:0}body{margin:0}}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000}</style></head><body><img src="${dataURL}" style="max-width:100%;max-height:100vh" onload="setTimeout(()=>{window.print();window.close()},200)"/></body></html>`)
+  win.document.write(`<!DOCTYPE html><html><head><title>Export PDF</title><style>@media print{@page{size:${canvas.width}px ${canvas.height}px;margin:0}body{margin:0}}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#000}</style></head><body><img src="${dataURL}" style="max-width:100%;max-height:100vh" onload="setTimeout(()=>{window.print();window.close()},200)"/></body></html>`)
   win.document.close()
-}
-
-function scaleCanvas(canvas: HTMLCanvasElement, scale: number): HTMLCanvasElement {
-  if (scale === 1) return canvas
-  const scaled = document.createElement('canvas')
-  scaled.width = Math.round(canvas.width * scale)
-  scaled.height = Math.round(canvas.height * scale)
-  const ctx = scaled.getContext('2d')!
-  ctx.imageSmoothingEnabled = true
-  ctx.imageSmoothingQuality = 'high'
-  ctx.drawImage(canvas, 0, 0, scaled.width, scaled.height)
-  return scaled
 }
 
 function downloadBlob(blob: Blob, filename: string) {

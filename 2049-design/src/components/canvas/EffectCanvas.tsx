@@ -55,15 +55,12 @@ export const EffectCanvas = forwardRef<HTMLCanvasElement>(function EffectCanvas(
         animationRef.current = requestAnimationFrame(animate)
       }
       animate()
+      return () => { cancelAnimationFrame(animationRef.current) }
     } else {
       frameRef.current = 0
-      render()
-    }
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
+      // Schedule render on next animation frame to avoid blocking slider interactions
+      const raf = requestAnimationFrame(() => render())
+      return () => cancelAnimationFrame(raf)
     }
   }, [state, render])
 

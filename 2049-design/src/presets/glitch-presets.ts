@@ -60,7 +60,7 @@ export const GLITCH_PRESETS: Preset<GlitchParams>[] = [
 ]
 
 export const DEFAULT_GLITCH_PARAMS: GlitchParams = {
-  stripeDensity: 1,
+  stripeDensity: 0,
   displacement: 0,
   rgbSplit: 0,
   clipShape: 'none',

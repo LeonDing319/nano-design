@@ -53,24 +53,23 @@ export function renderGlitch(
     ctx.clip()
   }
 
-  // 计算条纹数量
-  const stripeCount = Math.max(1, Math.floor(stripeDensity * 0.5))
+  // 计算条纹数量，stripeDensity=0 时退化为单条（整图）
+  const stripeCount = stripeDensity === 0 ? 1 : Math.max(1, Math.floor(stripeDensity * 0.5))
   // displacement 为 0 时留 1px 间隙，让条纹可见
   const stripeGap = displacement === 0 && stripeCount > 1 ? 1 : 0
   const stripeHeight = (imgH - stripeGap * (stripeCount - 1)) / stripeCount
 
-  // RGB 通道分离渲染
+  // RGB 通道分离渲染（用 multiply 混合 + 纯色遮罩替代像素级通道提取）
   if (rgbSplit > 0) {
-    const offsets = [
-      { color: 'red', dx: rgbSplit * scale },
-      { color: 'green', dx: 0 },
-      { color: 'blue', dx: -rgbSplit * scale },
+    const channelColors = [
+      { hex: '#ff0000', dx: rgbSplit * scale },
+      { hex: '#00ff00', dx: 0 },
+      { hex: '#0000ff', dx: -rgbSplit * scale },
     ]
 
     ctx.globalCompositeOperation = 'screen'
 
-    for (const { color, dx } of offsets) {
-      // 创建临时 canvas 做通道分离
+    for (const { hex, dx } of channelColors) {
       const tempCanvas = document.createElement('canvas')
       tempCanvas.width = canvasWidth
       tempCanvas.height = canvasHeight
@@ -90,15 +89,11 @@ export function renderGlitch(
         )
       }
 
-      // 提取单色通道
-      const imageData = tempCtx.getImageData(0, 0, canvasWidth, canvasHeight)
-      const data = imageData.data
-      for (let j = 0; j < data.length; j += 4) {
-        if (color === 'red') { data[j + 1] = 0; data[j + 2] = 0 }
-        else if (color === 'green') { data[j] = 0; data[j + 2] = 0 }
-        else { data[j] = 0; data[j + 1] = 0 }
-      }
-      tempCtx.putImageData(imageData, 0, 0)
+      // 用 multiply 混合纯色遮罩提取单通道，无需 getImageData 像素遍历
+      tempCtx.globalCompositeOperation = 'multiply'
+      tempCtx.fillStyle = hex
+      tempCtx.fillRect(0, 0, canvasWidth, canvasHeight)
+
       ctx.drawImage(tempCanvas, 0, 0)
     }
 
