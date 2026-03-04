@@ -3,11 +3,15 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { EffectCanvas, getDisplaySize } from './EffectCanvas'
 import { useAppState } from '@/hooks/useEffectParams'
+import { useImageUpload } from '@/hooks/useImageUpload'
+import { useTranslations } from 'next-intl'
 
 const ZOOM_MIN = 0.05
 const ZOOM_MAX = 20
 const ZOOM_SENSITIVITY = 0.01
 const PAN_SPEED = 1.5
+
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 interface InfiniteCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -15,12 +19,15 @@ interface InfiniteCanvasProps {
 
 export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
   const { state } = useAppState()
+  const { handleUpload } = useImageUpload()
+  const t = useTranslations('upload')
   const containerRef = useRef<HTMLDivElement>(null)
 
   const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
   const [nodePos, setNodePos] = useState({ x: 0, y: 0 })
   const [cursor, setCursor] = useState('default')
   const [isPanMode, setIsPanMode] = useState(false)
+  const [isFileDragOver, setIsFileDragOver] = useState(false)
 
   const viewportRef = useRef(viewport)
   viewportRef.current = viewport
@@ -151,15 +158,42 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
     startNodeDrag(e)
   }, [startNodeDrag])
 
+  // File drag-and-drop onto canvas
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsFileDragOver(true)
+    }
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+      setIsFileDragOver(false)
+    }
+  }, [])
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsFileDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file && ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      await handleUpload(file)
+    }
+  }, [handleUpload])
+
   return (
     <div
       ref={containerRef}
       className="w-full h-full overflow-hidden relative select-none outline-none"
-      style={{ cursor, background: '#1E1E1E' }}
+      style={{ cursor, background: 'var(--color-canvas-bg)' }}
       onMouseDown={handleMouseDown}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       tabIndex={-1}
     >
-
       <div
         className="absolute top-0 left-0"
         style={{
@@ -182,6 +216,21 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
           </div>
         )}
       </div>
+
+      {/* Empty state hint */}
+      {!state.image && !isFileDragOver && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <p className="text-sm text-neutral-600 select-none">{t('dragHint')}</p>
+        </div>
+      )}
+
+      {/* File drop overlay */}
+      {isFileDragOver && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-4 border-2 border-dashed border-blue-500/60 rounded-2xl bg-blue-500/5" />
+          <p className="relative text-base font-medium text-blue-400">{t('dropOverlay')}</p>
+        </div>
+      )}
 
       <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-neutral-800/80 backdrop-blur-sm rounded text-xs text-neutral-500 select-none pointer-events-none font-mono tabular-nums">
         {Math.round(viewport.zoom * 100)}%

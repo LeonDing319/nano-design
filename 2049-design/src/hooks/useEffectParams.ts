@@ -13,6 +13,7 @@ type Action =
   | { type: 'SET_GLITCH_PRESET'; payload: GlitchParams }
   | { type: 'SET_ASCII_PRESET'; payload: AsciiParams }
   | { type: 'SET_LOCALE'; payload: 'zh' | 'en' }
+  | { type: 'SET_THEME'; payload: 'dark' | 'light' }
 
 const initialState: AppState = {
   image: null,
@@ -20,6 +21,7 @@ const initialState: AppState = {
   glitchParams: DEFAULT_GLITCH_PARAMS,
   asciiParams: DEFAULT_ASCII_PARAMS,
   locale: 'en',
+  theme: 'dark',
 }
 
 function reducer(state: AppState, action: Action): AppState {
@@ -38,6 +40,8 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, asciiParams: action.payload }
     case 'SET_LOCALE':
       return { ...state, locale: action.payload }
+    case 'SET_THEME':
+      return { ...state, theme: action.payload }
     default:
       return state
   }

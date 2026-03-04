@@ -19,17 +19,37 @@ export function Header() {
   }
 
   return (
-    <header className="flex items-center justify-between h-12 px-4 border-b border-neutral-800 bg-neutral-900 text-[#393A3D]">
-      <nav className="flex items-center gap-0.5 bg-neutral-800 rounded-md p-0.5">
+    <header style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      height: 48,
+      padding: '0 16px',
+      borderBottom: '1px solid var(--color-border-faint)',
+      backgroundColor: 'var(--color-bg-primary)',
+    }}>
+      <nav style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        backgroundColor: 'var(--color-bg-elevated)',
+        borderRadius: 6,
+        padding: 2,
+      }}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => dispatch({ type: 'SET_EFFECT', payload: tab.id })}
-            className={`px-3.5 py-1 text-sm rounded transition-colors ${
-              state.activeEffect === tab.id
-                ? 'bg-neutral-700 text-neutral-100 shadow-sm'
-                : 'text-neutral-400 hover:text-neutral-200'
-            }`}
+            style={{
+              padding: '4px 14px',
+              fontSize: 14,
+              borderRadius: 4,
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'background-color 0.15s, color 0.15s',
+              backgroundColor: state.activeEffect === tab.id ? 'var(--color-bg-hover)' : 'transparent',
+              color: state.activeEffect === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+            }}
           >
             {tab.label}
           </button>
@@ -38,9 +58,29 @@ export function Header() {
 
       <button
         onClick={toggleLocale}
-        className="flex items-center gap-1.5 px-2 py-1 text-sm text-neutral-400 hover:text-neutral-200 rounded-md hover:bg-neutral-800 transition-colors"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 8px',
+          fontSize: 14,
+          color: 'var(--color-text-muted)',
+          borderRadius: 6,
+          border: 'none',
+          cursor: 'pointer',
+          backgroundColor: 'transparent',
+          transition: 'background-color 0.15s, color 0.15s',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated)'
+          e.currentTarget.style.color = 'var(--color-text-primary)'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.backgroundColor = 'transparent'
+          e.currentTarget.style.color = 'var(--color-text-muted)'
+        }}
       >
-        <Globe className="w-4 h-4" />
+        <Globe style={{ width: 16, height: 16 }} />
         <span>{state.locale === 'en' ? 'EN' : '中'}</span>
       </button>
     </header>

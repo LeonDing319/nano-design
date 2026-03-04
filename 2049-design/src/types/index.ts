@@ -29,6 +29,7 @@ export interface AppState {
   glitchParams: GlitchParams
   asciiParams: AsciiParams
   locale: 'zh' | 'en'
+  theme: 'dark' | 'light'
 }
 
 export interface Preset<T> {

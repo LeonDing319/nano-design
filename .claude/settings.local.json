@@ -10,7 +10,11 @@
       "Bash(lsof:*)",
       "Bash(curl:*)",
       "Bash(pkill:*)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(cp:*)",
+      "WebSearch"
     ]
   }
 }

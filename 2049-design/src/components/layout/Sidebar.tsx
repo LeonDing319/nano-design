@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useAppState } from '@/hooks/useEffectParams'
 import { ImageUploader } from '@/components/upload/ImageUploader'
 import { Slider } from '@/components/controls/Slider'
@@ -12,15 +12,6 @@ import { GLITCH_PRESETS, DEFAULT_GLITCH_PARAMS } from '@/presets/glitch-presets'
 import { ASCII_PRESETS, DEFAULT_ASCII_PARAMS } from '@/presets/ascii-presets'
 import { GlitchParams, AsciiParams } from '@/types'
 import { useTranslations } from 'next-intl'
-import { exportPNG, exportJPEG, exportSVG, exportPDF } from '@/engines/exporter'
-import { ChevronDown } from 'lucide-react'
-
-type ExportFormat = 'PNG' | 'JPEG' | 'SVG' | 'PDF'
-type ExportScale = '0.5x' | '1x' | '2x' | '3x' | '4x'
-
-const SCALE_VALUES: Record<ExportScale, number> = {
-  '0.5x': 0.5, '1x': 1, '2x': 2, '3x': 3, '4x': 4,
-}
 
 interface SidebarProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -29,28 +20,9 @@ interface SidebarProps {
 export function Sidebar({ canvasRef }: SidebarProps) {
   const { state, dispatch } = useAppState()
   const [activePresetId, setActivePresetId] = useState<string>(GLITCH_PRESETS[0].id)
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('PNG')
-  const [exportScale, setExportScale] = useState<ExportScale>('1x')
-  const [exporting, setExporting] = useState(false)
   const t = useTranslations('params')
-  const tExport = useTranslations('export')
   const hasImage = !!state.image
   const disabled = !hasImage
-
-  const handleExport = useCallback(async () => {
-    if (!canvasRef.current || !hasImage) return
-    setExporting(true)
-    const scale = SCALE_VALUES[exportScale]
-    const filename = '2049-design-export'
-    const canvas = canvasRef.current
-    switch (exportFormat) {
-      case 'PNG': await exportPNG(canvas, filename, scale); break
-      case 'JPEG': await exportJPEG(canvas, filename, scale); break
-      case 'SVG': await exportSVG(canvas, filename, scale); break
-      case 'PDF': await exportPDF(canvas, filename, scale); break
-    }
-    setExporting(false)
-  }, [canvasRef, hasImage, exportFormat, exportScale])
 
   const setGlitch = (key: keyof GlitchParams, value: GlitchParams[keyof GlitchParams]) => {
     dispatch({ type: 'SET_GLITCH_PARAMS', payload: { [key]: value } })
@@ -63,9 +35,9 @@ export function Sidebar({ canvasRef }: SidebarProps) {
   }
 
   return (
-    <aside className="w-80 h-full border-l border-neutral-800 flex flex-col" style={{ backgroundColor: '#2C2C2C' }}>
+    <aside className="w-80 h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-secondary)', borderLeft: '1px solid var(--color-border-faint)' }}>
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
-        <ImageUploader hasImage={hasImage} />
+        <ImageUploader hasImage={hasImage} canvasRef={canvasRef} />
 
         {state.activeEffect === 'glitch' ? (
           <>
@@ -174,51 +146,6 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             </div>
           </>
         )}
-      </div>
-
-      <div className="p-4 border-t border-neutral-800 space-y-3">
-        <h3 className="text-sm font-semibold text-neutral-100">{tExport('title')}</h3>
-
-        <div className="flex items-center gap-2">
-          {/* Scale selector */}
-          <div className="relative">
-            <select
-              value={exportScale}
-              onChange={(e) => setExportScale(e.target.value as ExportScale)}
-              disabled={disabled}
-              className="appearance-none bg-neutral-700 text-neutral-200 text-xs font-medium pl-3 pr-7 py-1.5 rounded-md border-none outline-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {Object.keys(SCALE_VALUES).map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
-          </div>
-
-          {/* Format selector */}
-          <div className="relative flex-1">
-            <select
-              value={exportFormat}
-              onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
-              disabled={disabled}
-              className="appearance-none w-full bg-neutral-700 text-neutral-200 text-xs font-medium pl-3 pr-7 py-1.5 rounded-md border-none outline-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <option value="PNG">PNG</option>
-              <option value="JPEG">JPEG</option>
-              <option value="SVG">SVG</option>
-              <option value="PDF">PDF</option>
-            </select>
-            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400 pointer-events-none" />
-          </div>
-        </div>
-
-        <button
-          onClick={handleExport}
-          disabled={disabled || exporting}
-          className="w-full py-2 text-sm font-medium text-neutral-200 bg-neutral-700 rounded-lg hover:bg-neutral-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed border border-neutral-600"
-        >
-          {exporting ? tExport('processing') : tExport('button')}
-        </button>
       </div>
     </aside>
   )

@@ -17,6 +17,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_LOCALE', payload: locale })
   }, [dispatch])
 
+  // Sync theme to <html data-theme="...">
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', state.theme)
+  }, [state.theme])
+
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       <NextIntlClientProvider locale={state.locale} messages={messages[state.locale]} timeZone="Asia/Shanghai">
