@@ -8,7 +8,7 @@
     "ascii": "ASCII Art"
   },
   "upload": {
-    "title": "Upload Image",
+    "title": "Upload",
     "dragHint": "Drag & drop image here or click to upload",
     "formats": "JPG, PNG, WebP supported, max 10MB",
     "dropOverlay": "Drop image here",

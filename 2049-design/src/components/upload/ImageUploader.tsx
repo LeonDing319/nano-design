@@ -73,12 +73,26 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
 
   return (
     <div className="space-y-2">
+      {/* Preview banner */}
+      <img
+        src="/preview-banner.png"
+        alt="Preview"
+        style={{
+          width: '100%',
+          display: 'block',
+          borderRadius: '8px',
+          objectFit: 'cover',
+          border: '1.5px solid rgba(92, 92, 92, 1)',
+        }}
+      />
+
       <div className="flex gap-2">
         {/* Upload button */}
         <button
           onClick={onClickUpload}
           style={{
-            flex: 1,
+            flex: '1 1 0',
+            minWidth: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -100,7 +114,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
         </button>
 
         {/* Export button */}
-        <div style={{ position: 'relative', flex: 1 }}>
+        <div style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
           <button
             onClick={() => { if (hasImage && !exporting) setShowExportMenu(v => !v) }}
             disabled={!hasImage || exporting}
