@@ -1,7 +1,9 @@
 'use client'
 
+import { ReactNode } from 'react'
+
 interface ToggleProps {
-  label: string
+  label: ReactNode
   checked: boolean
   onChange: (checked: boolean) => void
   disabled?: boolean
@@ -9,7 +11,7 @@ interface ToggleProps {
 
 export function Toggle({ label, checked, onChange, disabled }: ToggleProps) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between" style={{ opacity: disabled ? 0.4 : 1 }}>
       <span className="text-sm text-neutral-300">{label}</span>
       <button
         type="button"
@@ -17,7 +19,7 @@ export function Toggle({ label, checked, onChange, disabled }: ToggleProps) {
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         disabled={disabled}
-        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:cursor-not-allowed ${
           checked ? 'bg-blue-500' : 'bg-neutral-700'
         }`}
       >

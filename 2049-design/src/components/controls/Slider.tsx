@@ -1,11 +1,116 @@
 'use client'
 
-import { ReactNode, useRef, useState, useEffect } from 'react'
+import { ReactNode, useRef, useState, useEffect, useCallback } from 'react'
 
 const THUMB = 16
 
+let audioCtx: AudioContext | null = null
+function getAudioCtx(): AudioContext {
+  if (!audioCtx) audioCtx = new AudioContext()
+  return audioCtx
+}
+
+let lastTickTime = 0
+const TICK_INTERVAL = 80
+
+type SoundType = 'bubble' | 'mech5' | 'drag' | 'fun5'
+
+// Continuous drag sound nodes (for displacement slider)
+let dragOsc: OscillatorNode | null = null
+let dragGain: GainNode | null = null
+
+function startDragSound() {
+  try {
+    const ctx = getAudioCtx()
+    if (dragOsc) return
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    // Gentle filtered noise-like tone — smooth continuous hiss
+    osc.type = 'sawtooth'
+    osc.frequency.value = 180
+    const filter = ctx.createBiquadFilter()
+    filter.type = 'bandpass'
+    filter.frequency.value = 600
+    filter.Q.value = 0.5
+    gain.gain.setValueAtTime(0, ctx.currentTime)
+    gain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + .04)
+    osc.connect(filter)
+    filter.connect(gain)
+    gain.connect(ctx.destination)
+    osc.start()
+    dragOsc = osc
+    dragGain = gain
+  } catch { /* ignore */ }
+}
+
+function stopDragSound() {
+  try {
+    if (!dragGain || !dragOsc) return
+    const ctx = getAudioCtx()
+    dragGain.gain.linearRampToValueAtTime(0, ctx.currentTime + .06)
+    const osc = dragOsc
+    setTimeout(() => { try { osc.stop() } catch { /* ignore */ } }, 80)
+    dragOsc = null
+    dragGain = null
+  } catch { /* ignore */ }
+}
+
+function playSound(type: SoundType) {
+  const now = Date.now()
+  if (now - lastTickTime < TICK_INTERVAL) return
+  lastTickTime = now
+  try {
+    const ctx = getAudioCtx()
+    const t = ctx.currentTime
+    const g = ctx.createGain()
+    g.connect(ctx.destination)
+
+    switch (type) {
+      // 气泡（RGB Split 保留）
+      case 'bubble': {
+        const osc = ctx.createOscillator()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(480, t)
+        osc.frequency.exponentialRampToValueAtTime(880, t + .045)
+        g.gain.setValueAtTime(0.001, t)
+        g.gain.linearRampToValueAtTime(0.28, t + .008)
+        g.gain.exponentialRampToValueAtTime(0.001, t + .05)
+        osc.connect(g); osc.start(t); osc.stop(t + .055)
+        break
+      }
+      // 05 钟表滴答 → 条纹分层
+      case 'mech5': {
+        const buf = ctx.createBuffer(1, ~~(ctx.sampleRate * .008), ctx.sampleRate)
+        const d = buf.getChannelData(0)
+        for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 12)
+        const s = ctx.createBufferSource(); s.buffer = buf
+        const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 5000
+        g.gain.value = .45
+        s.connect(hp); hp.connect(g); s.start()
+        break
+      }
+      // drag 类型不走这里，由 startDragSound/stopDragSound 控制
+      case 'drag': break
+      // 25 磁吸 → 随机 Seed
+      case 'fun5': {
+        const osc = ctx.createOscillator()
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(80, t)
+        osc.frequency.linearRampToValueAtTime(120, t + .06)
+        g.gain.setValueAtTime(0.001, t)
+        g.gain.linearRampToValueAtTime(0.4, t + .02)
+        g.gain.exponentialRampToValueAtTime(0.001, t + .08)
+        osc.connect(g); osc.start(t); osc.stop(t + .09)
+        break
+      }
+    }
+  } catch {
+    // Ignore if audio not available
+  }
+}
+
 interface SliderProps {
-  label: string
+  label: ReactNode
   value: number
   min: number
   max: number
@@ -13,13 +118,19 @@ interface SliderProps {
   onChange: (value: number) => void
   disabled?: boolean
   suffix?: ReactNode
+  sound?: SoundType
 }
 
-export function Slider({ label, value, min, max, step = 1, onChange, disabled, suffix }: SliderProps) {
+export function Slider({ label, value, min, max, step = 1, onChange, disabled, suffix, sound = 'bubble' }: SliderProps) {
   const percent = (value - min) / (max - min)
   const trackRef = useRef<HTMLDivElement>(null)
   const [trackWidth, setTrackWidth] = useState(0)
   const [dragging, setDragging] = useState(false)
+
+  const handleChange = useCallback((v: number) => {
+    if (sound !== 'drag') playSound(sound)
+    onChange(v)
+  }, [onChange, sound])
 
   useEffect(() => {
     if (!trackRef.current) return
@@ -28,9 +139,7 @@ export function Slider({ label, value, min, max, step = 1, onChange, disabled, s
     return () => ro.disconnect()
   }, [])
 
-  // Thumb left: travels from 0 to (trackWidth - THUMB)
   const thumbLeft = trackWidth > 0 ? percent * (trackWidth - THUMB) : 0
-  // Fill width: thumb left edge + full thumb width
   const fillWidth = trackWidth > 0 ? thumbLeft + THUMB : 0
 
   return (
@@ -44,61 +153,36 @@ export function Slider({ label, value, min, max, step = 1, onChange, disabled, s
       </div>
 
       <div ref={trackRef} style={{ position: 'relative', height: THUMB }}>
-        {/* Track background */}
         <div style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 9999,
-          backgroundColor: '#242424',
-          overflow: 'hidden',
+          position: 'absolute', inset: 0, borderRadius: 9999,
+          backgroundColor: 'var(--color-slider-track)', overflow: 'hidden',
         }}>
-          {/* Filled portion */}
           <div style={{
-            height: '100%',
-            width: fillWidth,
-            backgroundColor: '#3a3a3a',
+            height: '100%', width: fillWidth, backgroundColor: 'var(--color-slider-fill)',
             transition: dragging ? 'none' : 'width 0.05s',
           }} />
         </div>
 
-        {/* Native input — invisible, handles all interaction */}
         <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          onMouseDown={() => setDragging(true)}
-          onMouseUp={() => setDragging(false)}
-          onTouchStart={() => setDragging(true)}
-          onTouchEnd={() => setDragging(false)}
+          type="range" min={min} max={max} step={step} value={value}
+          onChange={(e) => handleChange(Number(e.target.value))}
+          onMouseDown={() => { setDragging(true); if (sound === 'drag') startDragSound() }}
+          onMouseUp={() => { setDragging(false); if (sound === 'drag') stopDragSound() }}
+          onTouchStart={() => { setDragging(true); if (sound === 'drag') startDragSound() }}
+          onTouchEnd={() => { setDragging(false); if (sound === 'drag') stopDragSound() }}
           disabled={disabled}
           style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            margin: 0,
-            opacity: 0,
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            zIndex: 2,
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            margin: 0, opacity: 0, cursor: disabled ? 'not-allowed' : 'pointer', zIndex: 2,
           }}
         />
 
-        {/* Thumb */}
         <div style={{
-          position: 'absolute',
-          top: 0,
-          left: thumbLeft,
-          width: THUMB,
-          height: THUMB,
-          borderRadius: '50%',
-          backgroundColor: '#5c5c5c',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.7)',
+          position: 'absolute', top: 0, left: thumbLeft,
+          width: THUMB, height: THUMB, borderRadius: '50%',
+          backgroundColor: 'var(--color-slider-thumb)', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
           transition: dragging ? 'none' : 'left 0.05s',
-          pointerEvents: 'none',
-          zIndex: 1,
+          pointerEvents: 'none', zIndex: 1,
         }} />
       </div>
     </div>

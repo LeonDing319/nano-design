@@ -1,9 +1,10 @@
 'use client'
 
+import { ReactNode } from 'react'
 import { Preset } from '@/types'
 
 interface PresetPickerProps<T> {
-  label: string
+  label: ReactNode
   presets: Preset<T>[]
   activePresetId?: string
   onSelect: (params: T, presetId: string) => void

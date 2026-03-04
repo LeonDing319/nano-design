@@ -7,6 +7,44 @@ import { useTranslations } from 'next-intl'
 import { exportPNG, exportJPEG, exportSVG, exportPDF } from '@/engines/exporter'
 import { useAppState } from '@/hooks/useEffectParams'
 
+// 10 水晶球 — 开灯（切换到亮色模式）
+function playLightOn() {
+  try {
+    const ctx = new AudioContext()
+    const t = ctx.currentTime;
+    [1046, 1318, 1568, 2093].forEach((freq, i) => {
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      o.type = 'sine'
+      o.frequency.value = freq
+      g.gain.setValueAtTime(0.001, t + i * .03)
+      g.gain.linearRampToValueAtTime(0.14, t + i * .03 + .01)
+      g.gain.exponentialRampToValueAtTime(0.001, t + i * .03 + .3)
+      o.connect(g); g.connect(ctx.destination)
+      o.start(t + i * .03); o.stop(t + i * .03 + .35)
+    })
+  } catch { /* ignore */ }
+}
+
+// 06 魔法点灯 — 关灯（切换到暗色模式）
+function playLightOff() {
+  try {
+    const ctx = new AudioContext()
+    const t = ctx.currentTime;
+    [0, .02, .04, .06, .08].forEach((d, i) => {
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      o.type = 'sine'
+      o.frequency.value = 800 + i * 250
+      g.gain.setValueAtTime(0.001, t + d)
+      g.gain.linearRampToValueAtTime(0.15, t + d + .008)
+      g.gain.exponentialRampToValueAtTime(0.001, t + d + .1)
+      o.connect(g); g.connect(ctx.destination)
+      o.start(t + d); o.stop(t + d + .12)
+    })
+  } catch { /* ignore */ }
+}
+
 type ExportFormat = 'PNG' | 'JPEG' | 'SVG' | 'PDF'
 
 interface ImageUploaderProps {
@@ -61,6 +99,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
   }, [canvasRef, hasImage])
 
   const toggleTheme = useCallback(() => {
+    isDark ? playLightOn() : playLightOff()
     dispatch({ type: 'SET_THEME', payload: isDark ? 'light' : 'dark' })
   }, [dispatch, isDark])
 

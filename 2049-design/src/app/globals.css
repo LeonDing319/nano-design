@@ -27,6 +27,10 @@ html, body {
   --color-theme-toggle-bg: #262626;
   --color-theme-toggle-hover: #404040;
   --color-theme-toggle-icon: #a3a3a3;
+
+  --color-slider-track: #242424;
+  --color-slider-fill: #3a3a3a;
+  --color-slider-thumb: #5c5c5c;
 }
 
 /* Light theme */
@@ -49,6 +53,10 @@ html[data-theme="light"] {
   --color-theme-toggle-bg: #e5e5e5;
   --color-theme-toggle-hover: #d4d4d4;
   --color-theme-toggle-icon: #525252;
+
+  --color-slider-track: #e8e8e8;
+  --color-slider-fill: #d4d4d4;
+  --color-slider-thumb: #b0b0b0;
 }
 
 /* ── Tailwind neutral palette override for light theme ──

@@ -12,6 +12,7 @@ import { GLITCH_PRESETS, DEFAULT_GLITCH_PARAMS } from '@/presets/glitch-presets'
 import { ASCII_PRESETS, DEFAULT_ASCII_PARAMS } from '@/presets/ascii-presets'
 import { GlitchParams, AsciiParams } from '@/types'
 import { useTranslations } from 'next-intl'
+import { AlignJustify, Shuffle, Layers, Dice5, Play, Gauge, LayoutGrid } from 'lucide-react'
 
 interface SidebarProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -42,7 +43,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
         {state.activeEffect === 'glitch' ? (
           <>
             <PresetPicker
-              label={t('presets')}
+              label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><LayoutGrid style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('presets')}</span>}
               presets={GLITCH_PRESETS}
               activePresetId={activePresetId}
               onSelect={(params, id) => {
@@ -59,36 +60,42 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             />
 
             <div className="space-y-3">
-              <Slider label={t('stripeDensity')} value={state.glitchParams.stripeDensity} min={0} max={100} onChange={(v) => setGlitch('stripeDensity', v)} disabled={disabled} />
-              <Slider label={t('displacement')} value={state.glitchParams.displacement} min={0} max={100} onChange={(v) => setGlitch('displacement', v)} disabled={disabled} />
-              <Slider label={t('rgbSplit')} value={state.glitchParams.rgbSplit} min={0} max={50} onChange={(v) => setGlitch('rgbSplit', v)} disabled={disabled} />
-
               <Slider
-                label={t('randomSeed')}
-                value={state.glitchParams.randomSeed}
-                min={0}
-                max={50}
-                onChange={(v) => setGlitch('randomSeed', v)}
-                disabled={disabled}
-                suffix={
-                  <button
-                    onClick={() => setGlitch('randomSeed', Math.floor(Math.random() * 51))}
-                    disabled={disabled}
-                    className="px-2 py-0.5 text-xs text-neutral-300 bg-neutral-700 rounded hover:bg-neutral-600 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
-                  >
-                    {t('randomize')}
-                  </button>
-                }
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><AlignJustify style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('stripeDensity')}</span>}
+                value={state.glitchParams.stripeDensity} min={0} max={100} onChange={(v) => setGlitch('stripeDensity', v)} disabled={disabled}
+                sound="mech5"
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shuffle style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('displacement')}</span>}
+                value={state.glitchParams.displacement} min={0} max={100} onChange={(v) => setGlitch('displacement', v)} disabled={disabled}
+                sound="mech5"
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Layers style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('rgbSplit')}</span>}
+                value={state.glitchParams.rgbSplit} min={0} max={50} onChange={(v) => setGlitch('rgbSplit', v)} disabled={disabled}
+                sound="mech5"
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Dice5 style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('randomSeed')}</span>}
+                value={state.glitchParams.randomSeed} min={0} max={50} onChange={(v) => setGlitch('randomSeed', v)} disabled={disabled}
+                sound="mech5"
               />
 
-              <Toggle label={t('animation')} checked={state.glitchParams.animation} onChange={(v) => setGlitch('animation', v)} disabled={disabled} />
-              <Slider label={t('animationSpeed')} value={state.glitchParams.animationSpeed} min={1} max={10} onChange={(v) => setGlitch('animationSpeed', v)} disabled={disabled || !state.glitchParams.animation} />
+              <Toggle
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Play style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('animation')}</span>}
+                checked={state.glitchParams.animation} onChange={(v) => setGlitch('animation', v)} disabled={disabled}
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Gauge style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('animationSpeed')}</span>}
+                value={state.glitchParams.animationSpeed} min={1} max={10} onChange={(v) => setGlitch('animationSpeed', v)} disabled={disabled || !state.glitchParams.animation}
+                sound="mech5"
+              />
             </div>
           </>
         ) : (
           <>
             <PresetPicker
-              label={t('presets')}
+              label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><LayoutGrid style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('presets')}</span>}
               presets={ASCII_PRESETS}
               activePresetId={activePresetId}
               onSelect={(params, id) => {
