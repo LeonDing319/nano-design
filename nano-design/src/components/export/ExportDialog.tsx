@@ -23,7 +23,7 @@ export function ExportDialog({ open, onClose, canvasRef }: ExportDialogProps) {
   const handleExportPNG = useCallback(async () => {
     if (!canvasRef.current) return
     setProcessing(true)
-    await exportPNG(canvasRef.current, '2049-design-export')
+    await exportPNG(canvasRef.current, 'nano-design-export')
     setProcessing(false)
   }, [canvasRef])
 
@@ -37,7 +37,7 @@ export function ExportDialog({ open, onClose, canvasRef }: ExportDialogProps) {
       (frameIndex) => {
         renderGlitch(ctx, state.image!, state.glitchParams, canvas.width, canvas.height, frameIndex)
       },
-      { frames: 30, delay: 100, filename: '2049-design-export' }
+      { frames: 30, delay: 100, filename: 'nano-design-export' }
     )
     setProcessing(false)
   }, [canvasRef, state])

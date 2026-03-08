@@ -1,20 +1,20 @@
 # dependencies
-2049-design/node_modules
+nano-design/node_modules
 
 # next.js
-2049-design/.next/
-2049-design/out/
+nano-design/.next/
+nano-design/out/
 
 # misc
 .DS_Store
 *.pem
 
 # env
-2049-design/.env*
+nano-design/.env*
 
 # typescript
-2049-design/*.tsbuildinfo
-2049-design/next-env.d.ts
+nano-design/*.tsbuildinfo
+nano-design/next-env.d.ts
 
 # vercel
-2049-design/.vercel
+nano-design/.vercel

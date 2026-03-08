@@ -87,7 +87,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
     if (!canvasRef?.current || !hasImage) return
     setExporting(true)
     setShowExportMenu(false)
-    const filename = '2049-design-export'
+    const filename = 'nano-design-export'
     const canvas = canvasRef.current
     switch (fmt) {
       case 'PNG': await exportPNG(canvas, filename); break

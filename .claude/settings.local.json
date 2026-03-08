@@ -14,7 +14,11 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(cp:*)",
-      "WebSearch"
+      "WebSearch",
+      "WebFetch(domain:localhost)",
+      "Read(//Users/admin/Leon/VibeCoding/2049 Design/**)",
+      "Bash(python /tmp/screenshot.py)",
+      "Bash(gh repo:*)"
     ]
   }
 }
