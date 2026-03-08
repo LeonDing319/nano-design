@@ -147,17 +147,17 @@ export function Slider({ label, value, min, max, step = 1, onChange, disabled, s
   const fillWidth = thumbCenter
 
   return (
-    <div className="flex flex-col gap-1.5" style={{ opacity: disabled ? 0.4 : 1 }}>
+    <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-2">
           <span className="text-neutral-300">{label}</span>
           {suffix}
         </div>
-        <span className="text-neutral-500 tabular-nums">{value}</span>
+        <span className="text-neutral-500 tabular-nums" style={{ opacity: disabled ? 0.4 : 1 }}>{value}</span>
       </div>
 
       {/* Outer container — full width, used for input hit area */}
-      <div ref={trackRef} style={{ position: 'relative', height: THUMB }}>
+      <div ref={trackRef} style={{ position: 'relative', height: THUMB, opacity: disabled ? 0.4 : 1 }}>
         {/* Track — full width background */}
         <div style={{
           position: 'absolute', inset: 0, borderRadius: 9999,

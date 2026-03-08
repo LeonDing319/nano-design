@@ -46,7 +46,7 @@ export const EffectCanvas = forwardRef<HTMLCanvasElement>(function EffectCanvas(
   useEffect(() => {
     if (!state.image) return
 
-    const isAnimating = state.activeEffect === 'glitch' && state.glitchParams.animation
+    const isAnimating = state.activeEffect === 'glitch' && (state.glitchParams.animation || state.glitchParams.rgbSplitDirectionAnim)
 
     if (isAnimating) {
       const animate = () => {

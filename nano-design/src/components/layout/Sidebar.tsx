@@ -72,14 +72,28 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               />
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Layers style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('rgbSplit')}</span>}
-                value={state.glitchParams.rgbSplit} min={0} max={50} onChange={(v) => setGlitch('rgbSplit', v)} disabled={disabled}
+                value={state.glitchParams.rgbSplit} min={0} max={25} onChange={(v) => setGlitch('rgbSplit', v)} disabled={disabled}
                 sound="mech5"
               />
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Move style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('rgbSplitDirection')}</span>}
                 value={state.glitchParams.rgbSplitDirection} min={0} max={360} onChange={(v) => setGlitch('rgbSplitDirection', v)}
-                disabled={disabled || state.glitchParams.rgbSplit === 0}
+                disabled={disabled || state.glitchParams.rgbSplit === 0 || state.glitchParams.rgbSplitDirectionAnim}
                 sound="mech5"
+                suffix={
+                  <button
+                    type="button"
+                    onClick={() => setGlitch('rgbSplitDirectionAnim', !state.glitchParams.rgbSplitDirectionAnim)}
+                    disabled={disabled || state.glitchParams.rgbSplit === 0}
+                    className={`px-2 py-0.5 text-xs rounded-full border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                      state.glitchParams.rgbSplitDirectionAnim
+                        ? 'text-blue-500 border-blue-500 bg-blue-500/15'
+                        : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:border-neutral-500'
+                    }`}
+                  >
+                    Auto
+                  </button>
+                }
               />
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Dice5 style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('randomSeed')}</span>}

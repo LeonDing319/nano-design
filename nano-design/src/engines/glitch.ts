@@ -11,6 +11,52 @@ function seededRandom(seed: number): () => number {
   }
 }
 
+function drawShiftedWithEdgeExtend(
+  targetCtx: CanvasRenderingContext2D,
+  sourceCanvas: HTMLCanvasElement,
+  dx: number,
+  dy: number,
+  width: number,
+  height: number
+) {
+  // 扩展画布边缘像素，模拟 clamp-to-edge 采样，避免偏移后出现透明边
+  const padX = Math.ceil(Math.abs(dx)) + 2
+  const padY = Math.ceil(Math.abs(dy)) + 2
+
+  const expandedCanvas = document.createElement('canvas')
+  expandedCanvas.width = width + padX * 2
+  expandedCanvas.height = height + padY * 2
+  const expandedCtx = expandedCanvas.getContext('2d')!
+
+  // 中心原图
+  expandedCtx.drawImage(sourceCanvas, padX, padY)
+
+  // 四边延展
+  expandedCtx.drawImage(sourceCanvas, 0, 0, 1, height, 0, padY, padX, height)
+  expandedCtx.drawImage(sourceCanvas, width - 1, 0, 1, height, padX + width, padY, padX, height)
+  expandedCtx.drawImage(sourceCanvas, 0, 0, width, 1, padX, 0, width, padY)
+  expandedCtx.drawImage(sourceCanvas, 0, height - 1, width, 1, padX, padY + height, width, padY)
+
+  // 四角延展
+  expandedCtx.drawImage(sourceCanvas, 0, 0, 1, 1, 0, 0, padX, padY)
+  expandedCtx.drawImage(sourceCanvas, width - 1, 0, 1, 1, padX + width, 0, padX, padY)
+  expandedCtx.drawImage(sourceCanvas, 0, height - 1, 1, 1, 0, padY + height, padX, padY)
+  expandedCtx.drawImage(sourceCanvas, width - 1, height - 1, 1, 1, padX + width, padY + height, padX, padY)
+
+  // 从扩展画布采样平移后的区域
+  targetCtx.drawImage(
+    expandedCanvas,
+    padX - dx,
+    padY - dy,
+    width,
+    height,
+    0,
+    0,
+    width,
+    height
+  )
+}
+
 export function renderGlitch(
   ctx: CanvasRenderingContext2D,
   sourceImage: HTMLImageElement,
@@ -19,14 +65,12 @@ export function renderGlitch(
   canvasHeight: number,
   animationFrame?: number
 ) {
-  const { stripeDensity, displacement, rgbSplit, rgbSplitDirection, clipShape, randomSeed, animation, animationSpeed } = params
+  const { stripeDensity, displacement, rgbSplit, rgbSplitDirection, rgbSplitDirectionAnim, clipShape, randomSeed, animation, animationSpeed } = params
 
   // 计算实际 seed（动画模式下混入帧号）
   const effectiveSeed = animation && animationFrame !== undefined
     ? randomSeed + Math.floor(animationFrame * animationSpeed * 0.1)
     : randomSeed
-
-  const random = seededRandom(effectiveSeed)
 
   // 清除画布
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
@@ -61,11 +105,19 @@ export function renderGlitch(
 
   // RGB 通道分离渲染（用 multiply 混合 + 纯色遮罩替代像素级通道提取）
   if (rgbSplit > 0) {
-    // 角度转方向向量（0°=右，90°=下，顺时针）
-    const rad = rgbSplitDirection * Math.PI / 180
+    // 自动旋转模式：用三角波在 0->360->0 之间往返，周期约 4 秒（240 帧 @60fps）
+    let effectiveDirection = rgbSplitDirection
+    if (rgbSplitDirectionAnim && animationFrame !== undefined) {
+      const cycle = 1200
+      const pos = animationFrame % cycle
+      effectiveDirection = pos < cycle / 2
+        ? (pos / (cycle / 2)) * 360
+        : (1 - (pos - cycle / 2) / (cycle / 2)) * 360
+    }
+    const rad = effectiveDirection * Math.PI / 180
     const dirX = Math.cos(rad)
     const dirY = Math.sin(rad)
-    const splitAmount = rgbSplit * scale * 1.3
+    const splitAmount = rgbSplit * scale * 4.0
 
     const channelColors = [
       { hex: '#ff0000', dx: dirX * splitAmount, dy: dirY * splitAmount },
@@ -104,7 +156,7 @@ export function renderGlitch(
       tempCanvas.height = canvasHeight
       const tempCtx = tempCanvas.getContext('2d')!
 
-      tempCtx.drawImage(stripeCanvas, dx, dy)
+      drawShiftedWithEdgeExtend(tempCtx, stripeCanvas, dx, dy, canvasWidth, canvasHeight)
 
       tempCtx.globalCompositeOperation = 'multiply'
       tempCtx.fillStyle = hex
@@ -116,11 +168,9 @@ export function renderGlitch(
       rgbCtx.drawImage(tempCanvas, 0, 0)
     }
 
-    // 裁剪 RGB 效果到原图矩形边界
+    // 再次约束 alpha，确保输出区域与条纹底图一致
     rgbCtx.globalCompositeOperation = 'destination-in'
-    rgbCtx.fillStyle = 'white'
-    rgbCtx.fillRect(imgX, imgY, imgW, imgH)
-
+    rgbCtx.drawImage(stripeCanvas, 0, 0)
     ctx.drawImage(rgbCanvas, 0, 0)
   } else {
     // 无 RGB 分离，直接条纹位移
