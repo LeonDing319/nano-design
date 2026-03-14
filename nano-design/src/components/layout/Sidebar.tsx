@@ -96,7 +96,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                         : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:border-neutral-500'
                     }`}
                   >
-                    Auto
+                    {t('auto')}
                   </button>
                 }
               />

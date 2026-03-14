@@ -26,6 +26,7 @@
     "rgbSplit": "RGB 颜色",
     "rgbSplitDirection": "RGB 方向",
     "rgbSplitDirectionAnim": "自动旋转",
+    "auto": "自动",
     "duotone": "双色调",
     "duotoneLightColor": "亮部颜色",
     "duotoneDarkColor": "暗部颜色",

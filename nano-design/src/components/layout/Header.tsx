@@ -2,7 +2,6 @@
 
 import { useAppState } from '@/hooks/useEffectParams'
 import { EffectType } from '@/types'
-import { Globe } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useRef, useEffect, useState } from 'react'
 
@@ -26,15 +25,11 @@ export function Header() {
     }
   }, [state.activeEffect, state.locale])
 
-  const toggleLocale = () => {
-    dispatch({ type: 'SET_LOCALE', payload: state.locale === 'en' ? 'zh' : 'en' })
-  }
-
   return (
     <header style={{
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       height: 48,
       padding: '0 16px',
       borderBottom: '1px solid var(--color-border-faint)',
@@ -85,34 +80,6 @@ export function Header() {
           </button>
         ))}
       </nav>
-
-      <button
-        onClick={toggleLocale}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '4px 8px',
-          fontSize: 14,
-          color: 'var(--color-text-muted)',
-          borderRadius: 6,
-          border: 'none',
-          cursor: 'pointer',
-          backgroundColor: 'transparent',
-          transition: 'background-color 0.15s, color 0.15s',
-        }}
-        onMouseEnter={e => {
-          e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated)'
-          e.currentTarget.style.color = 'var(--color-text-primary)'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.backgroundColor = 'transparent'
-          e.currentTarget.style.color = 'var(--color-text-muted)'
-        }}
-      >
-        <Globe style={{ width: 16, height: 16 }} />
-        <span>{state.locale === 'en' ? 'EN' : '中'}</span>
-      </button>
     </header>
   )
 }

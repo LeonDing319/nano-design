@@ -26,6 +26,7 @@
     "rgbSplit": "RGB Split",
     "rgbSplitDirection": "RGB Direction",
     "rgbSplitDirectionAnim": "Auto Rotate",
+    "auto": "Auto",
     "duotone": "DuoTone",
     "duotoneLightColor": "Light Color",
     "duotoneDarkColor": "Dark Color",
