@@ -14,6 +14,8 @@ let duotoneSvg: SVGSVGElement | null = null
 let duotoneLastLight = ''
 let duotoneLastDark = ''
 let duotoneTempCanvas: HTMLCanvasElement | null = null
+let dotMaskTileCanvas: HTMLCanvasElement | null = null
+let dotMaskTileKey = ''
 
 function ensureDuotoneFilter(lightHex: string, darkHex: string) {
   if (duotoneSvg && duotoneLastLight === lightHex && duotoneLastDark === darkHex) return
@@ -71,6 +73,54 @@ function applyDuotone(
   ctx.restore()
 }
 
+function ensureDotMaskTile(dotSize: number) {
+  const clampedSize = Math.max(0.01, Math.min(6, dotSize))
+  // 棋盘式错位：奇偶行横向错开，形成“角对角”连接感
+  const pitch = Math.max(3, Math.round(clampedSize * 2.0 + 1))
+  const blockSize = Math.max(1, Math.min(pitch, Math.round(clampedSize * 1.7)))
+  const offset = Math.floor((pitch - blockSize) / 2)
+  const tileSize = pitch * 2
+  const key = `${pitch}-${blockSize}-${offset}-checker`
+
+  if (dotMaskTileCanvas && dotMaskTileKey === key) return dotMaskTileCanvas
+
+  dotMaskTileCanvas = document.createElement('canvas')
+  dotMaskTileCanvas.width = tileSize
+  dotMaskTileCanvas.height = tileSize
+  const tileCtx = dotMaskTileCanvas.getContext('2d')!
+  tileCtx.clearRect(0, 0, tileSize, tileSize)
+  tileCtx.fillStyle = 'rgba(0,0,0,0.95)'
+  // 左上 + 右下两块，repeat 后得到交错棋盘分布
+  tileCtx.fillRect(offset, offset, blockSize, blockSize)
+  tileCtx.fillRect(pitch + offset, pitch + offset, blockSize, blockSize)
+  dotMaskTileKey = key
+
+  return dotMaskTileCanvas
+}
+
+function applyDotMaskLayer(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  dotSize: number,
+  dotOpacity: number
+) {
+  if (dotOpacity <= 0 || dotSize <= 0) return
+
+  const tile = ensureDotMaskTile(dotSize)
+  const pattern = ctx.createPattern(tile, 'repeat')
+  if (!pattern) return
+
+  const opacity = Math.max(0, Math.min(0.7, dotOpacity))
+
+  ctx.save()
+  ctx.globalCompositeOperation = 'multiply'
+  ctx.globalAlpha = opacity
+  ctx.fillStyle = pattern
+  ctx.fillRect(0, 0, width, height)
+  ctx.restore()
+}
+
 function getStripeOffsetX(
   stripeIndex: number,
   displacement: number,
@@ -95,21 +145,20 @@ function getStripeOffsetX(
   return swing + bias
 }
 
-// 返回画面垂直偏移量（像素，基于画布坐标系）
-function getVerticalShift(
-  stripeIndex: number,
+// 返回全局垂直偏移量（像素，基于画布坐标系）
+function getGlobalVerticalOffset(
   verticalSpeed: number,
   scale: number,
-  animationFrame: number | undefined
+  animationFrame: number | undefined,
+  imageHeight: number
 ) {
   if (verticalSpeed === 0 || animationFrame === undefined) return 0
 
-  // 每层独立速度，持续向下偏移
-  const layerSpeed = 0.3 + Math.abs(Math.sin(stripeIndex * 2.39 + 0.5)) * 0.7
-  const amplitude = verticalSpeed * scale * 3
-  const speed = 0.02 * layerSpeed
-  // 用 sin 做平滑往返，幅度由 verticalSpeed 控制
-  return Math.sin(animationFrame * speed + stripeIndex * 1.73) * amplitude
+  // 线性速度映射：verticalSpeed 越大，单帧位移越大
+  const pxPerFrame = verticalSpeed * scale * 0.18
+  const loopHeight = Math.max(1, imageHeight)
+  // 单向下落，超出后循环
+  return (animationFrame * pxPerFrame) % loopHeight
 }
 
 interface StripeSegment {
@@ -175,9 +224,9 @@ function drawStripe(
   destY: number,
   stripeHeight: number,
   offsetX: number,
-  verticalShift: number = 0
+  layerShiftY: number = 0
 ) {
-  const drawY = Math.floor(destY)
+  const drawY = Math.floor(destY + layerShiftY)
   const drawH = Math.ceil(stripeHeight) + 1
 
   // 裁剪到条纹区域
@@ -186,18 +235,14 @@ function drawStripe(
   targetCtx.rect(imgX - Math.abs(offsetX) - 2, drawY, imgW + Math.abs(offsetX) * 2 + 4, drawH)
   targetCtx.clip()
 
-  // 画完整图片，水平偏移 + 垂直偏移
-  targetCtx.drawImage(
-    sourceImage,
-    imgX + offsetX, imgY + verticalShift,
-    imgW, imgH
-  )
+  // 画完整图片，底图采样位置固定，只让“条纹层位置”滚动
+  targetCtx.drawImage(sourceImage, imgX + offsetX, imgY, imgW, imgH)
 
   // 左右边缘补齐
   if (offsetX > 0) {
-    targetCtx.drawImage(sourceImage, 0, 0, 1, sourceImage.height, imgX, imgY + verticalShift, offsetX + 2, imgH)
+    targetCtx.drawImage(sourceImage, 0, 0, 1, sourceImage.height, imgX, imgY, offsetX + 2, imgH)
   } else if (offsetX < 0) {
-    targetCtx.drawImage(sourceImage, sourceImage.width - 1, 0, 1, sourceImage.height, imgX + imgW + offsetX - 2, imgY + verticalShift, -offsetX + 2, imgH)
+    targetCtx.drawImage(sourceImage, sourceImage.width - 1, 0, 1, sourceImage.height, imgX + imgW + offsetX - 2, imgY, -offsetX + 2, imgH)
   }
 
   targetCtx.restore()
@@ -257,7 +302,17 @@ export function renderGlitch(
   canvasHeight: number,
   animationFrame?: number
 ) {
-  const { stripeDensity, displacement, verticalSpeed, rgbSplit, rgbSplitDirection, rgbSplitDirectionAnim, clipShape } = params
+  const {
+    stripeDensity,
+    displacement,
+    verticalSpeed,
+    rgbSplit,
+    rgbSplitDirection,
+    rgbSplitDirectionAnim,
+    clipShape,
+    dotSize,
+    dotOpacity,
+  } = params
 
   // 清除画布
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
@@ -291,17 +346,21 @@ export function renderGlitch(
   // displacement 为 0 且无垂直滚动时留 1px 间隙让条纹可见，否则无缝
   const stripeGap = displacement === 0 && verticalSpeed === 0 && stripeCount > 1 ? 1 : 0
   const stripeSegments = buildStripeSegments(sourceImage.height, imgY, imgH, stripeCount, stripeGap)
+  const globalVerticalOffset = getGlobalVerticalOffset(verticalSpeed, scale, animationFrame, imgH)
 
   // RGB 通道分离渲染（用 multiply 混合 + 纯色遮罩替代像素级通道提取）
   if (rgbSplit > 0) {
-    // 自动旋转模式：用三角波在 0->360->0 之间往返，周期约 4 秒（240 帧 @60fps）
+    // 自动旋转模式：多频正弦叠加，产生不规则的顺/逆时针交替运动
     let effectiveDirection = rgbSplitDirection
     if (rgbSplitDirectionAnim && animationFrame !== undefined) {
-      const cycle = 1200
-      const pos = animationFrame % cycle
-      effectiveDirection = pos < cycle / 2
-        ? (pos / (cycle / 2)) * 360
-        : (1 - (pos - cycle / 2) / (cycle / 2)) * 360
+      const t = animationFrame / 60 // 秒
+      // 三个不同频率的正弦叠加，产生有机的非均匀旋转感
+      effectiveDirection = (
+        Math.sin(t * 0.68) * 150 +
+        Math.sin(t * 0.28) * 120 +
+        Math.sin(t * 1.24) * 50
+      ) % 360
+      if (effectiveDirection < 0) effectiveDirection += 360
     }
     const rad = effectiveDirection * Math.PI / 180
     const dirX = Math.cos(rad)
@@ -322,12 +381,18 @@ export function renderGlitch(
     for (let i = 0; i < stripeSegments.length; i++) {
       const segment = stripeSegments[i]
       const offsetX = getStripeOffsetX(i, displacement, scale, animationFrame)
-      const vShift = getVerticalShift(i, verticalSpeed, scale, animationFrame)
       drawStripe(
         stripeCtx, sourceImage, imgX, imgY, imgW, imgH,
         segment.destY, segment.destH,
-        offsetX, vShift
+        offsetX, globalVerticalOffset
       )
+      if (globalVerticalOffset > 0) {
+        drawStripe(
+          stripeCtx, sourceImage, imgX, imgY, imgW, imgH,
+          segment.destY - imgH, segment.destH,
+          offsetX, globalVerticalOffset
+        )
+      }
     }
 
     // RGB split 效果合成到独立 canvas
@@ -364,18 +429,26 @@ export function renderGlitch(
     for (let i = 0; i < stripeSegments.length; i++) {
       const segment = stripeSegments[i]
       const offsetX = getStripeOffsetX(i, displacement, scale, animationFrame)
-      const vShift = getVerticalShift(i, verticalSpeed, scale, animationFrame)
       drawStripe(
         ctx, sourceImage, imgX, imgY, imgW, imgH,
         segment.destY, segment.destH,
-        offsetX, vShift
+        offsetX, globalVerticalOffset
       )
+      if (globalVerticalOffset > 0) {
+        drawStripe(
+          ctx, sourceImage, imgX, imgY, imgW, imgH,
+          segment.destY - imgH, segment.destH,
+          offsetX, globalVerticalOffset
+        )
+      }
     }
   }
 
   if (params.duotone) {
     applyDuotone(ctx, ctx.canvas.width, ctx.canvas.height, params.duotoneLightColor, params.duotoneDarkColor)
   }
+
+  applyDotMaskLayer(ctx, canvasWidth, canvasHeight, dotSize, dotOpacity)
 
   ctx.restore()
 }

@@ -30,6 +30,8 @@
     "duotone": "双色调",
     "duotoneLightColor": "亮部颜色",
     "duotoneDarkColor": "暗部颜色",
+    "dotSize": "点大小",
+    "dotOpacity": "点透明度",
     "clipShape": "画符形状",
     "charDensity": "字符密度",
     "charSet": "字符集",

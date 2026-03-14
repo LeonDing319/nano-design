@@ -61,21 +61,6 @@ export function Sidebar({ canvasRef }: SidebarProps) {
 
             <div className="space-y-3">
               <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shuffle style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('displacement')}</span>}
-                value={state.glitchParams.displacement} min={0} max={20} onChange={(v) => setGlitch('displacement', v)} disabled={disabled}
-                sound="mech5"
-              />
-              <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><AlignJustify style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('stripeDensity')}</span>}
-                value={state.glitchParams.stripeDensity} min={0} max={50} onChange={(v) => setGlitch('stripeDensity', v)} disabled={disabled}
-                sound="mech5"
-              />
-              <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ArrowDownUp style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('verticalSpeed')}</span>}
-                value={state.glitchParams.verticalSpeed} min={0} max={20} onChange={(v) => setGlitch('verticalSpeed', v)} disabled={disabled}
-                sound="mech5"
-              />
-              <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Layers style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('rgbSplit')}</span>}
                 value={state.glitchParams.rgbSplit} min={0} max={25} onChange={(v) => setGlitch('rgbSplit', v)} disabled={disabled}
                 sound="mech5"
@@ -99,6 +84,21 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                     {t('auto')}
                   </button>
                 }
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shuffle style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('displacement')}</span>}
+                value={state.glitchParams.displacement} min={0} max={20} onChange={(v) => setGlitch('displacement', v)} disabled={disabled}
+                sound="mech5"
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><AlignJustify style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('stripeDensity')}</span>}
+                value={state.glitchParams.stripeDensity} min={0} max={50} onChange={(v) => setGlitch('stripeDensity', v)} disabled={disabled}
+                sound="mech5"
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ArrowDownUp style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('verticalSpeed')}</span>}
+                value={state.glitchParams.verticalSpeed} min={0} max={20} onChange={(v) => setGlitch('verticalSpeed', v)} disabled={disabled}
+                sound="mech5"
               />
             </div>
 
@@ -133,6 +133,23 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                   </label>
                 </div>
               )}
+            </div>
+
+            <div className="space-y-3">
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Move style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('dotSize')}</span>}
+                value={state.glitchParams.dotSize} min={0} max={6} step={0.1}
+                onChange={(v) => setGlitch('dotSize', v)}
+                disabled={disabled}
+                sound="mech5"
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Palette style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('dotOpacity')}</span>}
+                value={state.glitchParams.dotOpacity} min={0} max={0.7} step={0.01}
+                onChange={(v) => setGlitch('dotOpacity', v)}
+                disabled={disabled || state.glitchParams.dotSize <= 0}
+                sound="mech5"
+              />
             </div>
           </>
         ) : (

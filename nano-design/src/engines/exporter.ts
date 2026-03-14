@@ -171,19 +171,49 @@ function generateGlitchHTML(params: GlitchParams): string {
       return bias + globalSwing + localSwing;
     }
 
+    function getVerticalOffset() {
+      if (params.verticalSpeed === 0) return 0;
+      const pxPerFrame = params.verticalSpeed * 0.18;
+      return (frame * pxPerFrame) % canvas.height;
+    }
+
+    function drawStripeWithVerticalWrap(segment, offsetX, verticalOffset) {
+      const drawStripeAt = (drawY) => {
+        const stripeH = Math.ceil(segment.destH) + 1;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(-Math.abs(offsetX) - 2, drawY, canvas.width + Math.abs(offsetX) * 2 + 4, stripeH);
+        ctx.clip();
+        // 保持底图采样固定，只让条纹层位置滚动
+        ctx.drawImage(img, offsetX, 0, canvas.width, canvas.height);
+        if (offsetX > 0) {
+          ctx.drawImage(img, 0, 0, 1, img.height, 0, 0, offsetX + 2, canvas.height);
+        } else if (offsetX < 0) {
+          ctx.drawImage(img, img.width - 1, 0, 1, img.height, canvas.width + offsetX - 2, 0, -offsetX + 2, canvas.height);
+        }
+        ctx.restore();
+      };
+
+      drawStripeAt(Math.floor(segment.destY + verticalOffset));
+      if (verticalOffset > 0) {
+        drawStripeAt(Math.floor(segment.destY + verticalOffset - canvas.height));
+      }
+    }
+
     function renderGlitch() {
-      const shouldAnimate = params.rgbSplitDirectionAnim || params.displacement > 0;
+      const shouldAnimate = params.rgbSplitDirectionAnim || params.displacement > 0 || params.verticalSpeed > 0;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
       const stripeCount = params.stripeDensity === 0 ? 1 : Math.max(1, Math.round(params.stripeDensity));
-      const stripeGap = params.displacement === 0 && stripeCount > 1 ? 1 : 0;
+      const stripeGap = params.displacement === 0 && params.verticalSpeed === 0 && stripeCount > 1 ? 1 : 0;
       const stripeSegments = buildStripeSegments(img.height, canvas.height, stripeCount, stripeGap);
+      const verticalOffset = getVerticalOffset();
 
       for (let i = 0; i < stripeSegments.length; i++) {
         const segment = stripeSegments[i];
         const offsetX = getStripeOffset(i);
-        ctx.drawImage(img, 0, segment.srcY, img.width, segment.srcH,
-          offsetX, segment.destY, canvas.width, segment.destH + 1);
+        drawStripeWithVerticalWrap(segment, offsetX, verticalOffset);
       }
 
       if (shouldAnimate) {
@@ -272,17 +302,19 @@ function generateGlitchCanvasCode(params: GlitchParams): string {
 function renderGlitch(ctx, img, params, frame) {
   const w = ctx.canvas.width, h = ctx.canvas.height;
   ctx.clearRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
 
   const stripeCount = params.stripeDensity === 0 ? 1 : Math.max(1, Math.round(params.stripeDensity));
-  const stripeGap = params.displacement === 0 && stripeCount > 1 ? 1 : 0;
+  const stripeGap = params.displacement === 0 && params.verticalSpeed === 0 && stripeCount > 1 ? 1 : 0;
   const usableHeight = h - stripeGap * (stripeCount - 1);
+  const verticalOffset = params.verticalSpeed === 0 ? 0 : (frame * params.verticalSpeed * 0.18) % h;
   const weights = Array.from({ length: stripeCount }, (_, i) => {
     const waveA = Math.sin(i * 1.73 + stripeCount * 0.11);
     const waveB = Math.sin(i * 3.11 + 0.79);
     return Math.max(0.25, 1 + waveA * 0.45 + waveB * 0.25);
   });
   const totalWeight = weights.reduce((acc, w) => acc + w, 0);
-  let srcCursor = 0, destCursor = 0, usedSrc = 0, usedDest = 0;
+  let destCursor = 0, usedDest = 0;
 
   for (let i = 0; i < stripeCount; i++) {
     const amplitude = params.displacement;
@@ -293,11 +325,29 @@ function renderGlitch(ctx, img, params, frame) {
     const localSwing = Math.sin(frame * speed * 1.25 + phase) * amplitude * 0.45;
     const offsetX = params.displacement === 0 ? 0 : (bias + globalSwing + localSwing);
     const ratio = weights[i] / totalWeight;
-    const srcH = i === stripeCount - 1 ? img.height - usedSrc : img.height * ratio;
     const destH = i === stripeCount - 1 ? usableHeight - usedDest : usableHeight * ratio;
-    ctx.drawImage(img, 0, srcCursor, img.width, srcH,
-      offsetX, destCursor, w, destH + 1);
-    srcCursor += srcH; usedSrc += srcH;
+    const drawY = destCursor + verticalOffset;
+
+    const drawStripeAt = (y) => {
+      const stripeH = Math.ceil(destH) + 1;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-Math.abs(offsetX) - 2, y, w + Math.abs(offsetX) * 2 + 4, stripeH);
+      ctx.clip();
+      ctx.drawImage(img, offsetX, 0, w, h);
+      if (offsetX > 0) {
+        ctx.drawImage(img, 0, 0, 1, h, 0, 0, offsetX + 2, h);
+      } else if (offsetX < 0) {
+        ctx.drawImage(img, w - 1, 0, 1, h, w + offsetX - 2, 0, -offsetX + 2, h);
+      }
+      ctx.restore();
+    };
+
+    drawStripeAt(drawY);
+    if (verticalOffset > 0) {
+      drawStripeAt(drawY - h);
+    }
+
     destCursor += destH + stripeGap; usedDest += destH;
   }
 }

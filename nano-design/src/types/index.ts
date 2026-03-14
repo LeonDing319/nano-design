@@ -11,6 +11,8 @@ export interface GlitchParams {
   duotone: boolean
   duotoneLightColor: string
   duotoneDarkColor: string
+  dotSize: number            // 0-6 (0 表示关闭点阵)
+  dotOpacity: number         // 0-0.7
 }
 
 export interface AsciiParams {
