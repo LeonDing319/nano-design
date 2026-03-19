@@ -4,7 +4,6 @@ import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef, memo }
 import { useAppState } from '@/hooks/useEffectParams'
 import { renderGlitch } from '@/engines/glitch'
 import { renderAscii } from '@/engines/ascii'
-import { renderDreamGridOverlay } from '@/engines/dream-grid'
 
 const MAX_DISPLAY_DIM = 1200
 
@@ -62,9 +61,6 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
       renderOriginal(ctx, state.image, width, height)
     }
 
-    if (state.activeEffect !== 'other') {
-      renderDreamGridOverlay(ctx, width, height, state.dreamGridParams)
-    }
   }, [state])
 
   useEffect(() => {

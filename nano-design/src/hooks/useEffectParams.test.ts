@@ -1,17 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { appReducer, initialAppState } from './useEffectParams'
 
-describe('appReducer dreamGrid state', () => {
-  it('updates only dreamGrid amount without affecting other params', () => {
+describe('appReducer', () => {
+  it('sets glitch params without affecting other state', () => {
     const nextState = appReducer(initialAppState, {
-      type: 'SET_DREAM_GRID_PARAMS',
-      payload: {
-        amount: 61,
-      },
+      type: 'SET_GLITCH_PARAMS',
+      payload: { rgbSplit: 10 },
     })
 
-    expect(nextState.dreamGridParams.amount).toBe(61)
-    expect(nextState.glitchParams).toBe(initialAppState.glitchParams)
+    expect(nextState.glitchParams.rgbSplit).toBe(10)
     expect(nextState.asciiParams).toBe(initialAppState.asciiParams)
   })
 })

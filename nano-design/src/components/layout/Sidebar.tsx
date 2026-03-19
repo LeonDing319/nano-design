@@ -36,10 +36,6 @@ export function Sidebar({ canvasRef }: SidebarProps) {
     setActivePresetId('')
   }
 
-  const setDreamGridAmount = (value: number) => {
-    dispatch({ type: 'SET_DREAM_GRID_PARAMS', payload: { amount: value } })
-  }
-
   return (
     <aside className="w-80 h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-secondary)', borderLeft: '1px solid var(--color-border-faint)' }}>
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
@@ -224,21 +220,6 @@ export function Sidebar({ canvasRef }: SidebarProps) {
           </div>
         )}
 
-        {state.activeEffect !== 'other' && (
-          <ControlGroup>
-            <div className="space-y-3">
-              <Slider
-                label={t('dreamGrid')}
-                value={state.dreamGridParams.amount}
-                min={0}
-                max={100}
-                onChange={setDreamGridAmount}
-                disabled={disabled}
-                sound="mech5"
-              />
-            </div>
-          </ControlGroup>
-        )}
       </div>
     </aside>
   )

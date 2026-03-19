@@ -1,9 +1,5 @@
 export type EffectType = 'glitch' | 'ascii' | 'other'
 
-export interface DreamGridParams {
-  amount: number
-}
-
 export interface GlitchParams {
   stripeDensity: number      // 0-50
   displacement: number       // 0-20
@@ -37,7 +33,6 @@ export interface AppState {
   activeEffect: EffectType
   glitchParams: GlitchParams
   asciiParams: AsciiParams
-  dreamGridParams: DreamGridParams
   locale: 'zh' | 'en'
   theme: 'dark' | 'light'
 }
