@@ -18,6 +18,7 @@ export const GLITCH_PRESETS: Preset<GlitchParams>[] = [
       duotoneDarkColor: '#2e3060',
       dotSize: 2.2,
       dotOpacity: 0.28,
+      scanlineDensity: 0,
     },
   },
   {
@@ -37,6 +38,7 @@ export const GLITCH_PRESETS: Preset<GlitchParams>[] = [
       duotoneDarkColor: '#2e3060',
       dotSize: 2.2,
       dotOpacity: 0.28,
+      scanlineDensity: 0,
     },
   },
   {
@@ -56,6 +58,7 @@ export const GLITCH_PRESETS: Preset<GlitchParams>[] = [
       duotoneDarkColor: '#2e3060',
       dotSize: 2.2,
       dotOpacity: 0.28,
+      scanlineDensity: 25,
     },
   },
   {
@@ -75,6 +78,7 @@ export const GLITCH_PRESETS: Preset<GlitchParams>[] = [
       duotoneDarkColor: '#2e3060',
       dotSize: 2.2,
       dotOpacity: 0.28,
+      scanlineDensity: 0,
     },
   },
 ]
@@ -92,4 +96,5 @@ export const DEFAULT_GLITCH_PARAMS: GlitchParams = {
   duotoneDarkColor: '#2e3060',
   dotSize: 0,
   dotOpacity: 0,
+  scanlineDensity: 0,
 }

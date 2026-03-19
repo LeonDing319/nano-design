@@ -9,7 +9,7 @@
     "other": "其他效果"
   },
   "upload": {
-    "title": "上传图片",
+    "title": "上传",
     "dragHint": "拖拽图片到此处或点击上传",
     "formats": "支持 JPG、PNG、WebP，最大 10MB",
     "dropOverlay": "将图片拖放到此处",
@@ -33,28 +33,57 @@
     "duotoneDarkColor": "暗部颜色",
     "dotSize": "点大小",
     "dotOpacity": "点透明度",
-    "clipShape": "画符形状",
-    "charDensity": "字符密度",
-    "charSet": "字符集",
-    "fontSize": "字体大小",
-    "colorMode": "颜色模式",
-    "bgColor": "背景色",
-    "invert": "反转",
-    "clipShapeOptions": {
-      "none": "无裁切",
-      "circle": "圆形",
-      "rectangle": "矩形"
+    "scanlines": "故障格线",
+    "renderMode": "渲染模式",
+    "renderModeOptions": {
+      "brightness": "亮度",
+      "edge": "边缘检测",
+      "dots": "点阵"
     },
+    "charSet": "字符集",
     "charSetOptions": {
       "standard": "标准",
+      "detailed": "详细",
       "minimal": "简约",
       "blocks": "方块",
       "custom": "自定义"
     },
-    "colorModeOptions": {
-      "bw": "黑白",
-      "color": "彩色",
-      "mono": "单色"
+    "fontSize": "字体大小",
+    "coverage": "覆盖率",
+    "edgeEmphasis": "边缘强调",
+    "darkThreshold": "暗部阈值",
+    "bgMode": "背景模式",
+    "bgModeOptions": {
+      "blur": "模糊",
+      "solid": "纯黑",
+      "original": "原始",
+      "transparent": "透明"
+    },
+    "bgBlur": "模糊度",
+    "bgOpacity": "背景透明度",
+    "blendMode": "混合模式",
+    "blendModeOptions": {
+      "normal": "正常",
+      "overlay": "叠加",
+      "colorDodge": "颜色减淡",
+      "screen": "滤色",
+      "lighter": "变亮"
+    },
+    "customCharsPlaceholder": "输入自定义字符...",
+    "charOpacity": "字符透明度",
+    "brightness": "亮度",
+    "contrast": "对比度",
+    "invert": "反色",
+    "dotGrid": "点网格",
+    "animated": "动画",
+    "animSpeed": "动画速度",
+    "animIntensity": "动画强度",
+    "animRandomness": "随机性",
+    "clipShape": "画符形状",
+    "clipShapeOptions": {
+      "none": "无裁切",
+      "circle": "圆形",
+      "rectangle": "矩形"
     }
   },
   "export": {
@@ -71,7 +100,15 @@
     "copy": "复制代码",
     "copied": "已复制！",
     "processing": "处理中...",
-    "close": "关闭"
+    "close": "关闭",
+    "duration": "时长",
+    "frameRate": "帧率",
+    "startExport": "开始导出"
+  },
+  "videoControls": {
+    "title": "播放控制",
+    "speed": "速度",
+    "fps": "帧率"
   },
   "settings": {
     "language": "语言"

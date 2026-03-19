@@ -7,15 +7,16 @@ import { renderAscii } from '@/engines/ascii'
 
 const MAX_DISPLAY_DIM = 1200
 
-export function getDisplaySize(image: HTMLImageElement) {
-  const { naturalWidth: w, naturalHeight: h } = image
+export function getDisplaySize(source: HTMLImageElement | HTMLVideoElement) {
+  const w = source instanceof HTMLVideoElement ? source.videoWidth : source.naturalWidth
+  const h = source instanceof HTMLVideoElement ? source.videoHeight : source.naturalHeight
   const scale = Math.min(MAX_DISPLAY_DIM / Math.max(w, h), 1)
   return { width: Math.round(w * scale), height: Math.round(h * scale) }
 }
 
 function renderOriginal(
   ctx: CanvasRenderingContext2D,
-  sourceImage: HTMLImageElement,
+  sourceImage: CanvasImageSource,
   canvasWidth: number,
   canvasHeight: number
 ) {
@@ -34,12 +35,13 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
 
   const render = useCallback(() => {
     const canvas = canvasRef.current
-    if (!canvas || !state.image) return
+    const source = state.video || state.image
+    if (!canvas || !source) return
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const { width, height } = getDisplaySize(state.image)
+    const { width, height } = getDisplaySize(source)
     const dpr = window.devicePixelRatio || 1
     const pw = width * dpr
     const ph = height * dpr
@@ -54,22 +56,28 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     if (state.activeEffect === 'glitch') {
-      renderGlitch(ctx, state.image, state.glitchParams, width, height, frameRef.current)
+      renderGlitch(ctx, source, state.glitchParams, width, height, frameRef.current)
     } else if (state.activeEffect === 'ascii') {
-      renderAscii(ctx, state.image, state.asciiParams, width, height)
+      renderAscii(ctx, source, state.asciiParams, width, height, frameRef.current)
     } else {
-      renderOriginal(ctx, state.image, width, height)
+      renderOriginal(ctx, source, width, height)
     }
 
   }, [state])
 
   useEffect(() => {
-    if (!state.image) return
+    const source = state.video || state.image
+    if (!source) return
 
-    const isAnimating = state.activeEffect === 'glitch' && (
-      state.glitchParams.rgbSplitDirectionAnim ||
-      state.glitchParams.displacement > 0 ||
-      state.glitchParams.verticalSpeed > 0
+    const isVideoMode = !!state.video
+    const isAnimating = isVideoMode || (
+      state.activeEffect === 'glitch' && (
+        state.glitchParams.rgbSplitDirectionAnim ||
+        state.glitchParams.displacement > 0 ||
+        state.glitchParams.verticalSpeed > 0
+      )
+    ) || (
+      state.activeEffect === 'ascii' && state.asciiParams.animated
     )
 
     if (isAnimating) {
@@ -88,9 +96,10 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
     }
   }, [state, render])
 
-  if (!state.image) return null
+  const source = state.video || state.image
+  if (!source) return null
 
-  const { width, height } = getDisplaySize(state.image)
+  const { width, height } = getDisplaySize(source)
 
   return (
     <canvas

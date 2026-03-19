@@ -43,14 +43,12 @@ export function ExportDialog({ open, onClose, canvasRef }: ExportDialogProps) {
   }, [canvasRef, state])
 
   const handleExportHTML = useCallback(() => {
-    const params = state.activeEffect === 'glitch' ? state.glitchParams : state.asciiParams
-    const code = generateHTMLCode(state.activeEffect, params)
+    const code = generateHTMLCode(state.activeEffect, state.glitchParams)
     setCodeContent(code)
   }, [state])
 
   const handleExportCanvasCode = useCallback(() => {
-    const params = state.activeEffect === 'glitch' ? state.glitchParams : state.asciiParams
-    const code = generateCanvasCode(state.activeEffect, params)
+    const code = generateCanvasCode(state.activeEffect, state.glitchParams)
     setCodeContent(code)
   }, [state])
 

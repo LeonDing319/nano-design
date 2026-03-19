@@ -33,28 +33,57 @@
     "duotoneDarkColor": "Dark Color",
     "dotSize": "Dot Size",
     "dotOpacity": "Dot Opacity",
-    "clipShape": "Clip Shape",
-    "charDensity": "Character Density",
-    "charSet": "Character Set",
-    "fontSize": "Font Size",
-    "colorMode": "Color Mode",
-    "bgColor": "Background Color",
-    "invert": "Invert",
-    "clipShapeOptions": {
-      "none": "None",
-      "circle": "Circle",
-      "rectangle": "Rectangle"
+    "scanlines": "Scanlines",
+    "renderMode": "Render Mode",
+    "renderModeOptions": {
+      "brightness": "Brightness",
+      "edge": "Edge Map",
+      "dots": "Dot Matrix"
     },
+    "charSet": "Character Set",
     "charSetOptions": {
       "standard": "Standard",
+      "detailed": "Detailed",
       "minimal": "Minimal",
       "blocks": "Blocks",
       "custom": "Custom"
     },
-    "colorModeOptions": {
-      "bw": "B&W",
-      "color": "Color",
-      "mono": "Mono"
+    "fontSize": "Font Size",
+    "coverage": "Coverage",
+    "edgeEmphasis": "Edge Emphasis",
+    "darkThreshold": "Dark Threshold",
+    "bgMode": "Background Mode",
+    "bgModeOptions": {
+      "blur": "Blur",
+      "solid": "Solid Black",
+      "original": "Original",
+      "transparent": "Transparent"
+    },
+    "bgBlur": "Blur Amount",
+    "bgOpacity": "Background Opacity",
+    "blendMode": "Blend Mode",
+    "blendModeOptions": {
+      "normal": "Normal",
+      "overlay": "Overlay",
+      "colorDodge": "Color Dodge",
+      "screen": "Screen",
+      "lighter": "Lighter"
+    },
+    "customCharsPlaceholder": "Enter custom characters...",
+    "charOpacity": "Character Opacity",
+    "brightness": "Brightness",
+    "contrast": "Contrast",
+    "invert": "Invert",
+    "dotGrid": "Dot Grid",
+    "animated": "Animation",
+    "animSpeed": "Animation Speed",
+    "animIntensity": "Animation Intensity",
+    "animRandomness": "Randomness",
+    "clipShape": "Clip Shape",
+    "clipShapeOptions": {
+      "none": "None",
+      "circle": "Circle",
+      "rectangle": "Rectangle"
     }
   },
   "export": {
@@ -71,7 +100,15 @@
     "copy": "Copy Code",
     "copied": "Copied!",
     "processing": "Processing...",
-    "close": "Close"
+    "close": "Close",
+    "duration": "Duration",
+    "frameRate": "Frame Rate",
+    "startExport": "Start Export"
+  },
+  "videoControls": {
+    "title": "Playback",
+    "speed": "Speed",
+    "fps": "FPS"
   },
   "settings": {
     "language": "Language"

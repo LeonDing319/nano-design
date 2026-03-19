@@ -12,6 +12,7 @@
   "dependencies": {
     "gif.js": "^0.2.0",
     "lucide-react": "^0.575.0",
+    "mp4-muxer": "^5.2.2",
     "next": "16.1.6",
     "next-intl": "^4.8.3",
     "react": "19.2.3",

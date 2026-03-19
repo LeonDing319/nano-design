@@ -1,4 +1,5 @@
-import { GlitchParams, AsciiParams, EffectType } from '@/types'
+import { Muxer, ArrayBufferTarget } from 'mp4-muxer'
+import { GlitchParams, EffectType } from '@/types'
 
 export async function exportPNG(canvas: HTMLCanvasElement, filename: string): Promise<void> {
   return new Promise((resolve) => {
@@ -80,24 +81,193 @@ export async function exportGIF(
   })
 }
 
+
+export async function exportMP4(
+  canvas: HTMLCanvasElement,
+  renderFrame: (frameIndex: number) => void,
+  options: {
+    duration: number
+    fps: number
+    filename: string
+    onProgress?: (progress: number) => void
+  }
+): Promise<void> {
+  const totalFrames = Math.round(options.duration * options.fps)
+  const width = canvas.width % 2 === 0 ? canvas.width : canvas.width + 1
+  const height = canvas.height % 2 === 0 ? canvas.height : canvas.height + 1
+
+  const muxer = new Muxer({
+    target: new ArrayBufferTarget(),
+    video: {
+      codec: 'avc',
+      width,
+      height,
+    },
+    fastStart: 'in-memory',
+  })
+
+  let codec = 'avc1.640028'
+  let encoder: VideoEncoder
+  try {
+    const support = await VideoEncoder.isConfigSupported({
+      codec,
+      width,
+      height,
+      bitrate: 5_000_000,
+    })
+    if (!support.supported) codec = 'avc1.42001f'
+  } catch {
+    codec = 'avc1.42001f'
+  }
+
+  encoder = new VideoEncoder({
+    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta ?? undefined),
+    error: (e) => console.error('VideoEncoder error:', e),
+  })
+
+  encoder.configure({
+    codec,
+    width,
+    height,
+    bitrate: 5_000_000,
+    framerate: options.fps,
+  })
+
+  const frameDuration = 1_000_000 / options.fps // microseconds
+
+  for (let i = 0; i < totalFrames; i++) {
+    renderFrame(i)
+
+    const bitmap = await createImageBitmap(canvas)
+    const frame = new VideoFrame(bitmap, {
+      timestamp: i * frameDuration,
+      duration: frameDuration,
+    })
+
+    const keyFrame = i % (options.fps * 2) === 0
+    encoder.encode(frame, { keyFrame })
+    frame.close()
+    bitmap.close()
+
+    // Throttle encoding queue
+    while (encoder.encodeQueueSize > 5) {
+      await new Promise(r => setTimeout(r, 1))
+    }
+
+    options.onProgress?.(i / totalFrames)
+  }
+
+  await encoder.flush()
+  encoder.close()
+  muxer.finalize()
+
+  const buffer = (muxer.target as ArrayBufferTarget).buffer
+  const blob = new Blob([buffer], { type: 'video/mp4' })
+  downloadBlob(blob, `${options.filename}.mp4`)
+  options.onProgress?.(1)
+}
+
+export async function exportVideoMP4(
+  canvas: HTMLCanvasElement,
+  video: HTMLVideoElement,
+  renderCurrentFrame: () => void,
+  options: {
+    fps: number
+    filename: string
+    onProgress?: (progress: number) => void
+  }
+): Promise<void> {
+  const duration = video.duration
+  const totalFrames = Math.round(duration * options.fps)
+  const width = canvas.width % 2 === 0 ? canvas.width : canvas.width + 1
+  const height = canvas.height % 2 === 0 ? canvas.height : canvas.height + 1
+
+  const muxer = new Muxer({
+    target: new ArrayBufferTarget(),
+    video: {
+      codec: 'avc',
+      width,
+      height,
+    },
+    fastStart: 'in-memory',
+  })
+
+  let codec = 'avc1.640028'
+  try {
+    const support = await VideoEncoder.isConfigSupported({
+      codec, width, height, bitrate: 5_000_000,
+    })
+    if (!support.supported) codec = 'avc1.42001f'
+  } catch {
+    codec = 'avc1.42001f'
+  }
+
+  const encoder = new VideoEncoder({
+    output: (chunk, meta) => muxer.addVideoChunk(chunk, meta ?? undefined),
+    error: (e) => console.error('VideoEncoder error:', e),
+  })
+
+  encoder.configure({
+    codec, width, height,
+    bitrate: 5_000_000,
+    framerate: options.fps,
+  })
+
+  const frameDuration = 1_000_000 / options.fps
+  const wasPlaying = !video.paused
+  video.pause()
+
+  for (let i = 0; i < totalFrames; i++) {
+    const targetTime = (i / totalFrames) * duration
+    video.currentTime = targetTime
+    await new Promise<void>(r => {
+      video.onseeked = () => r()
+    })
+
+    renderCurrentFrame()
+
+    const bitmap = await createImageBitmap(canvas)
+    const frame = new VideoFrame(bitmap, {
+      timestamp: i * frameDuration,
+      duration: frameDuration,
+    })
+
+    const keyFrame = i % (options.fps * 2) === 0
+    encoder.encode(frame, { keyFrame })
+    frame.close()
+    bitmap.close()
+
+    while (encoder.encodeQueueSize > 5) {
+      await new Promise(r => setTimeout(r, 1))
+    }
+
+    options.onProgress?.(i / totalFrames)
+  }
+
+  await encoder.flush()
+  encoder.close()
+  muxer.finalize()
+
+  const buffer = (muxer.target as ArrayBufferTarget).buffer
+  const blob = new Blob([buffer], { type: 'video/mp4' })
+  downloadBlob(blob, `${options.filename}.mp4`)
+  options.onProgress?.(1)
+
+  if (wasPlaying) video.play()
+}
+
 export function generateHTMLCode(
   effect: EffectType,
-  params: GlitchParams | AsciiParams
+  params: GlitchParams
 ): string {
-  if (effect === 'glitch') {
-    return generateGlitchHTML(params as GlitchParams)
-  }
-  return generateAsciiHTML(params as AsciiParams)
+  return generateGlitchHTML(params)
 }
 
 export function generateCanvasCode(
   effect: EffectType,
-  params: GlitchParams | AsciiParams
+  params: GlitchParams
 ): string {
-  if (effect === 'glitch') {
-    return generateGlitchCanvasCode(params as GlitchParams)
-  }
-  return generateAsciiCanvasCode(params as AsciiParams)
+  return generateGlitchCanvasCode(params)
 }
 
 function generateGlitchHTML(params: GlitchParams): string {
@@ -226,74 +396,6 @@ function generateGlitchHTML(params: GlitchParams): string {
 </html>`
 }
 
-function generateAsciiHTML(params: AsciiParams): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ASCII Art - Generated by Nano Design</title>
-  <style>
-    body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: ${params.bgColor}; }
-    canvas { max-width: 100%; max-height: 100vh; }
-  </style>
-</head>
-<body>
-  <canvas id="asciiCanvas"></canvas>
-  <script>
-    // ASCII Art Effect - Generated by Nano Design
-    // Parameters: ${JSON.stringify(params, null, 2)}
-
-    const canvas = document.getElementById('asciiCanvas');
-    const ctx = canvas.getContext('2d');
-    const params = ${JSON.stringify(params)};
-    const charSets = { standard: ' .:-=+*#%@', minimal: ' .:+#', blocks: ' ░▒▓█' };
-    const chars = params.charSet === 'custom' && params.customChars ? params.customChars : charSets[params.charSet] || charSets.standard;
-
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      canvas.width = 800;
-      canvas.height = 600;
-      renderAscii();
-    };
-    img.src = 'YOUR_IMAGE_URL_HERE';
-
-    function renderAscii() {
-      const charWidth = params.fontSize * 0.6;
-      const cols = Math.max(1, Math.floor((canvas.width * params.charDensity / 100) / charWidth));
-      const rows = Math.max(1, Math.floor(cols * (img.height / img.width) * (charWidth / params.fontSize)));
-
-      const sampleCanvas = document.createElement('canvas');
-      sampleCanvas.width = cols; sampleCanvas.height = rows;
-      const sCtx = sampleCanvas.getContext('2d');
-      sCtx.drawImage(img, 0, 0, cols, rows);
-      const pixels = sCtx.getImageData(0, 0, cols, rows).data;
-
-      ctx.fillStyle = params.bgColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = params.fontSize + 'px monospace';
-      ctx.textBaseline = 'top';
-
-      const oX = (canvas.width - cols * charWidth) / 2;
-      const oY = (canvas.height - rows * params.fontSize) / 2;
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const i = (r * cols + c) * 4;
-          let b = (0.299 * pixels[i] + 0.587 * pixels[i+1] + 0.114 * pixels[i+2]) / 255;
-          if (params.invert) b = 1 - b;
-          const ch = chars[Math.floor(b * (chars.length - 1))];
-          ctx.fillStyle = params.colorMode === 'color' ? 'rgb('+pixels[i]+','+pixels[i+1]+','+pixels[i+2]+')' : params.colorMode === 'mono' ? (params.monoColor || '#0f0') : 'rgb('+Math.floor(b*255)+','+Math.floor(b*255)+','+Math.floor(b*255)+')';
-          ctx.fillText(ch, oX + c * charWidth, oY + r * params.fontSize);
-        }
-      }
-    }
-  </script>
-</body>
-</html>`
-}
-
 function generateGlitchCanvasCode(params: GlitchParams): string {
   return `// Glitch Effect - Canvas Code
 // Generated by Nano Design
@@ -361,50 +463,6 @@ function renderGlitch(ctx, img, params, frame) {
 `
 }
 
-function generateAsciiCanvasCode(params: AsciiParams): string {
-  return `// ASCII Art - Canvas Code
-// Generated by Nano Design
-// Parameters: ${JSON.stringify(params)}
-
-const charSets = { standard: ' .:-=+*#%@', minimal: ' .:+#', blocks: ' ░▒▓█' };
-
-function renderAscii(ctx, img, params) {
-  const chars = params.charSet === 'custom' && params.customChars ? params.customChars : charSets[params.charSet] || charSets.standard;
-  const w = ctx.canvas.width, h = ctx.canvas.height;
-  const charWidth = params.fontSize * 0.6;
-  const cols = Math.max(1, Math.floor((w * params.charDensity / 100) / charWidth));
-  const rows = Math.max(1, Math.floor(cols * (img.height / img.width) * (charWidth / params.fontSize)));
-
-  const sc = document.createElement('canvas');
-  sc.width = cols; sc.height = rows;
-  sc.getContext('2d').drawImage(img, 0, 0, cols, rows);
-  const px = sc.getContext('2d').getImageData(0, 0, cols, rows).data;
-
-  ctx.fillStyle = params.bgColor;
-  ctx.fillRect(0, 0, w, h);
-  ctx.font = params.fontSize + 'px monospace';
-  ctx.textBaseline = 'top';
-  const oX = (w - cols * charWidth) / 2, oY = (h - rows * params.fontSize) / 2;
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const i = (r * cols + c) * 4;
-      let b = (0.299 * px[i] + 0.587 * px[i+1] + 0.114 * px[i+2]) / 255;
-      if (params.invert) b = 1 - b;
-      ctx.fillStyle = params.colorMode === 'color' ? 'rgb('+px[i]+','+px[i+1]+','+px[i+2]+')' : params.colorMode === 'mono' ? (params.monoColor || '#0f0') : 'rgb('+Math.floor(b*255)+','+Math.floor(b*255)+','+Math.floor(b*255)+')';
-      ctx.fillText(chars[Math.floor(b * (chars.length - 1))], oX + c * charWidth, oY + r * params.fontSize);
-    }
-  }
-}
-
-// Usage:
-// const canvas = document.getElementById('myCanvas');
-// const ctx = canvas.getContext('2d');
-// const img = new Image();
-// img.onload = () => renderAscii(ctx, img, ${JSON.stringify(params)});
-// img.src = 'your-image.jpg';
-`
-}
 
 export function copyToClipboard(text: string): Promise<void> {
   return navigator.clipboard.writeText(text)

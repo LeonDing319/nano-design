@@ -13,23 +13,55 @@ export interface GlitchParams {
   duotoneDarkColor: string
   dotSize: number            // 0-6 (0 表示关闭点阵)
   dotOpacity: number         // 0-0.7
+  scanlineDensity: number    // 0-25 (0 表示关闭故障格线)
 }
 
 export interface AsciiParams {
-  charDensity: number        // 1-100
-  charSet: 'standard' | 'minimal' | 'blocks' | 'custom'
-  customChars?: string
-  fontSize: number           // 4-24
-  colorMode: 'bw' | 'color' | 'mono'
-  monoColor?: string
-  bgColor: string
+  // Characters
+  renderMode: 'brightness' | 'edge' | 'dots'
+  charSet: 'standard' | 'detailed' | 'minimal' | 'blocks' | 'custom'
+  customChars: string
+  fontSize: number           // 4-20
+
+  // Intensity
+  coverage: number           // 0-100
+  edgeEmphasis: number       // 0-100
+  darkThreshold: number      // 0-100
+
+  // Background
+  bgMode: 'blur' | 'solid' | 'original' | 'transparent'
+  bgBlur: number             // 0-20
+  bgOpacity: number          // 0-100
+
+  // Color & Tone
+  blendMode: string
+  charOpacity: number        // 0-100
+  brightness: number         // -100 to 100
+  contrast: number           // -100 to 100
   invert: boolean
+  dotGrid: boolean
+
+  // Animation
+  animated: boolean
+  animSpeed: number          // 500-5000
+  animIntensity: number      // 0-100
+  animRandomness: number     // 0-100
 }
 
 export type ExportFormat = 'png' | 'gif' | 'html' | 'canvas-code'
 
+export interface VideoPlaybackState {
+  playing: boolean
+  currentTime: number
+  duration: number
+  speed: number
+  fps: number
+}
+
 export interface AppState {
   image: HTMLImageElement | null
+  video: HTMLVideoElement | null
+  videoPlayback: VideoPlaybackState
   activeEffect: EffectType
   glitchParams: GlitchParams
   asciiParams: AsciiParams

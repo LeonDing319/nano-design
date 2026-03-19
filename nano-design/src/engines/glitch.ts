@@ -1,4 +1,13 @@
-import { GlitchParams } from '@/types'
+import type { GlitchParams } from '@/types'
+
+type ImageSource = HTMLImageElement | HTMLVideoElement
+
+function sourceWidth(src: ImageSource): number {
+  return src instanceof HTMLVideoElement ? src.videoWidth : src.naturalWidth
+}
+function sourceHeight(src: ImageSource): number {
+  return src instanceof HTMLVideoElement ? src.videoHeight : src.naturalHeight
+}
 
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '')
@@ -16,6 +25,8 @@ let duotoneLastDark = ''
 let duotoneTempCanvas: HTMLCanvasElement | null = null
 let dotMaskTileCanvas: HTMLCanvasElement | null = null
 let dotMaskTileKey = ''
+let scanlineDarkTileCanvas: HTMLCanvasElement | null = null
+let scanlineDarkTileKey = ''
 
 function ensureDuotoneFilter(lightHex: string, darkHex: string) {
   if (duotoneSvg && duotoneLastLight === lightHex && duotoneLastDark === darkHex) return
@@ -121,6 +132,80 @@ function applyDotMaskLayer(
   ctx.restore()
 }
 
+export function getScanlinePitch(scanlineDensity: number) {
+  if (scanlineDensity <= 0) return null
+
+  const clampedDensity = Math.max(1, Math.min(25, scanlineDensity))
+  const minPitch = 2
+  const maxPitch = 12
+  const normalized = (clampedDensity - 1) / 49
+
+  return Math.max(minPitch, Math.round(maxPitch - normalized * (maxPitch - minPitch)))
+}
+
+export function getScanlineRowProfile(rowInPitch: number, pitch: number, lineThickness: number) {
+  if (pitch <= 1) {
+    return { darken: 0.12 }
+  }
+
+  const darkBand = Math.max(1, Math.min(lineThickness, pitch - 1))
+  if (rowInPitch <= darkBand) {
+    const falloff = darkBand <= 1 ? 1 : 1 - rowInPitch / darkBand
+    return { darken: 0.68 + falloff * 0.32 }
+  }
+
+  const tailSpan = Math.max(1, pitch - 1 - darkBand)
+  const tailOffset = rowInPitch - darkBand - 1
+  const tailProgress = tailSpan <= 1 ? 1 : tailOffset / tailSpan
+
+  return { darken: 0.12 + (1 - tailProgress) * 0.18 }
+}
+
+function ensureScanlineTile(pitch: number, lineThickness: number) {
+  const key = `${pitch}-${lineThickness}`
+  if (scanlineDarkTileCanvas && scanlineDarkTileKey === key) return scanlineDarkTileCanvas
+
+  const tileCanvas = document.createElement('canvas')
+  tileCanvas.width = 1
+  tileCanvas.height = pitch
+  const tileCtx = tileCanvas.getContext('2d')!
+
+  tileCtx.clearRect(0, 0, 1, pitch)
+  for (let y = 0; y < pitch; y++) {
+    const profile = getScanlineRowProfile(y, pitch, lineThickness)
+    if (profile.darken <= 0) continue
+    tileCtx.fillStyle = `rgba(0,0,0,${profile.darken})`
+    tileCtx.fillRect(0, y, 1, 1)
+  }
+
+  scanlineDarkTileCanvas = tileCanvas
+  scanlineDarkTileKey = key
+
+  return tileCanvas
+}
+
+function applyScanlineLayer(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  scanlineDensity: number
+) {
+  const pitch = getScanlinePitch(scanlineDensity)
+  if (pitch === null) return
+
+  const lineThickness = 4
+  const darkTile = ensureScanlineTile(pitch, lineThickness)
+  const darkPattern = ctx.createPattern(darkTile, 'repeat')
+  if (!darkPattern) return
+
+  ctx.save()
+  ctx.globalCompositeOperation = 'multiply'
+  ctx.globalAlpha = 0.18
+  ctx.fillStyle = darkPattern
+  ctx.fillRect(0, 0, width, height)
+  ctx.restore()
+}
+
 function getStripeOffsetX(
   stripeIndex: number,
   displacement: number,
@@ -216,7 +301,7 @@ function buildStripeSegments(
 
 function drawStripe(
   targetCtx: CanvasRenderingContext2D,
-  sourceImage: HTMLImageElement,
+  sourceImage: ImageSource,
   imgX: number,
   imgY: number,
   imgW: number,
@@ -240,9 +325,9 @@ function drawStripe(
 
   // 左右边缘补齐
   if (offsetX > 0) {
-    targetCtx.drawImage(sourceImage, 0, 0, 1, sourceImage.height, imgX, imgY, offsetX + 2, imgH)
+    targetCtx.drawImage(sourceImage, 0, 0, 1, sourceHeight(sourceImage), imgX, imgY, offsetX + 2, imgH)
   } else if (offsetX < 0) {
-    targetCtx.drawImage(sourceImage, sourceImage.width - 1, 0, 1, sourceImage.height, imgX + imgW + offsetX - 2, imgY, -offsetX + 2, imgH)
+    targetCtx.drawImage(sourceImage, sourceWidth(sourceImage) - 1, 0, 1, sourceHeight(sourceImage), imgX + imgW + offsetX - 2, imgY, -offsetX + 2, imgH)
   }
 
   targetCtx.restore()
@@ -296,7 +381,7 @@ function drawShiftedWithEdgeExtend(
 
 export function renderGlitch(
   ctx: CanvasRenderingContext2D,
-  sourceImage: HTMLImageElement,
+  sourceImage: ImageSource,
   params: GlitchParams,
   canvasWidth: number,
   canvasHeight: number,
@@ -312,15 +397,18 @@ export function renderGlitch(
     clipShape,
     dotSize,
     dotOpacity,
+    scanlineDensity,
   } = params
 
   // 清除画布
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
   // 计算图片在画布中的居中位置和缩放
-  const scale = Math.min(canvasWidth / sourceImage.width, canvasHeight / sourceImage.height)
-  const imgW = sourceImage.width * scale
-  const imgH = sourceImage.height * scale
+  const srcW = sourceWidth(sourceImage)
+  const srcH = sourceHeight(sourceImage)
+  const scale = Math.min(canvasWidth / srcW, canvasHeight / srcH)
+  const imgW = srcW * scale
+  const imgH = srcH * scale
   const imgX = (canvasWidth - imgW) / 2
   const imgY = (canvasHeight - imgH) / 2
 
@@ -345,7 +433,7 @@ export function renderGlitch(
   const stripeCount = stripeDensity === 0 ? 1 : Math.max(1, Math.round(stripeDensity))
   // displacement 为 0 且无垂直滚动时留 1px 间隙让条纹可见，否则无缝
   const stripeGap = displacement === 0 && verticalSpeed === 0 && stripeCount > 1 ? 1 : 0
-  const stripeSegments = buildStripeSegments(sourceImage.height, imgY, imgH, stripeCount, stripeGap)
+  const stripeSegments = buildStripeSegments(srcH, imgY, imgH, stripeCount, stripeGap)
   const globalVerticalOffset = getGlobalVerticalOffset(verticalSpeed, scale, animationFrame, imgH)
 
   // RGB 通道分离渲染（用 multiply 混合 + 纯色遮罩替代像素级通道提取）
@@ -449,6 +537,7 @@ export function renderGlitch(
   }
 
   applyDotMaskLayer(ctx, canvasWidth, canvasHeight, dotSize, dotOpacity)
+  applyScanlineLayer(ctx, canvasWidth, canvasHeight, scanlineDensity)
 
   ctx.restore()
 }

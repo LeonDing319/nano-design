@@ -13,8 +13,8 @@ export function LocaleToggle() {
     <button
       onClick={toggleLocale}
       style={{
-        width: 36,
-        height: 36,
+        width: 32,
+        height: 32,
         borderRadius: '50%',
         flexShrink: 0,
         display: 'flex',
@@ -22,19 +22,17 @@ export function LocaleToggle() {
         justifyContent: 'center',
         fontSize: 13,
         fontWeight: 500,
-        color: 'var(--color-theme-toggle-icon)',
-        backgroundColor: 'var(--color-theme-toggle-bg)',
-        border: '1px solid var(--color-border-group)',
+        color: 'var(--color-text-muted)',
+        backgroundColor: 'transparent',
+        border: 'none',
         cursor: 'pointer',
-        transition: 'background-color 0.2s, transform 0.2s',
+        transition: 'background-color 0.2s',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.backgroundColor = 'var(--color-theme-toggle-hover)'
-        e.currentTarget.style.transform = 'scale(1.08)'
+        e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.backgroundColor = 'var(--color-theme-toggle-bg)'
-        e.currentTarget.style.transform = 'scale(1)'
+        e.currentTarget.style.backgroundColor = 'transparent'
       }}
     >
       {state.locale === 'en' ? '中' : 'EN'}

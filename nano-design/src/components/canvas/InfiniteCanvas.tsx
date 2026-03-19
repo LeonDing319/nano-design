@@ -60,14 +60,16 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
   const spaceRef = useRef(false)
   const imageSizeRef = useRef({ width: 0, height: 0 })
 
+  const source = state.video || state.image
+
   // 用 ref 保存图片尺寸，供事件回调访问
   useEffect(() => {
-    if (state.image) {
-      imageSizeRef.current = getDisplaySize(state.image)
+    if (source) {
+      imageSizeRef.current = getDisplaySize(source)
     } else {
       imageSizeRef.current = { width: 0, height: 0 }
     }
-  }, [state.image])
+  }, [source])
 
   const clamp = useCallback((v: { x: number; y: number; zoom: number }) => {
     const el = containerRef.current
@@ -78,9 +80,9 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
   }, [])
 
   useEffect(() => {
-    if (state.image && containerRef.current) {
+    if (source && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
-      const { width: dw, height: dh } = getDisplaySize(state.image)
+      const { width: dw, height: dh } = getDisplaySize(source)
       const padding = 40
       const fitZoom = Math.min(
         (rect.width - padding * 2) / dw,
@@ -96,7 +98,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
         zoom: fitZoom,
       })
     }
-  }, [state.image])
+  }, [source])
 
   useEffect(() => {
     const el = containerRef.current
@@ -260,7 +262,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
           willChange: 'transform',
         }}
       >
-        {state.image && (
+        {source && (
           <div
             className="absolute"
             style={{
@@ -277,7 +279,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
       </div>
 
       {/* Empty state hint */}
-      {!state.image && !isFileDragOver && (
+      {!source && !isFileDragOver && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <p className="text-sm text-neutral-600 select-none">{t('dragHint')}</p>
         </div>
@@ -308,13 +310,13 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
           color: 'var(--color-theme-toggle-icon)',
         }}
       >
-        {state.image && (
+        {source && (
           <button
             type="button"
             onClick={() => {
-              if (!state.image || !containerRef.current) return
+              if (!source || !containerRef.current) return
               const rect = containerRef.current.getBoundingClientRect()
-              const { width: dw, height: dh } = getDisplaySize(state.image)
+              const { width: dw, height: dh } = getDisplaySize(source)
               const padding = 40
               const fitZoom = Math.min(
                 (rect.width - padding * 2) / dw,
@@ -349,7 +351,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
             <Maximize style={{ width: 14, height: 14 }} />
           </button>
         )}
-        <span style={{ padding: '0 12px 0 ' + (state.image ? '0' : '12px') }}>{Math.round(viewport.zoom * 100)}%</span>
+        <span style={{ padding: '0 12px 0 ' + (source ? '0' : '12px') }}>{Math.round(viewport.zoom * 100)}%</span>
       </div>
     </div>
   )
