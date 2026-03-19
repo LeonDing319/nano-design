@@ -1,30 +1,33 @@
 'use client'
 
 import { useReducer, createContext, useContext } from 'react'
-import { AppState, EffectType, GlitchParams, AsciiParams } from '@/types'
+import { AppState, EffectType, GlitchParams, AsciiParams, DreamGridParams } from '@/types'
 import { DEFAULT_GLITCH_PARAMS } from '@/presets/glitch-presets'
 import { DEFAULT_ASCII_PARAMS } from '@/presets/ascii-presets'
+import { DEFAULT_DREAM_GRID_PARAMS } from '@/engines/dream-grid'
 
 type Action =
   | { type: 'SET_IMAGE'; payload: HTMLImageElement | null }
   | { type: 'SET_EFFECT'; payload: EffectType }
   | { type: 'SET_GLITCH_PARAMS'; payload: Partial<GlitchParams> }
   | { type: 'SET_ASCII_PARAMS'; payload: Partial<AsciiParams> }
+  | { type: 'SET_DREAM_GRID_PARAMS'; payload: Partial<DreamGridParams> }
   | { type: 'SET_GLITCH_PRESET'; payload: GlitchParams }
   | { type: 'SET_ASCII_PRESET'; payload: AsciiParams }
   | { type: 'SET_LOCALE'; payload: 'zh' | 'en' }
   | { type: 'SET_THEME'; payload: 'dark' | 'light' }
 
-const initialState: AppState = {
+export const initialAppState: AppState = {
   image: null,
   activeEffect: 'glitch',
   glitchParams: DEFAULT_GLITCH_PARAMS,
   asciiParams: DEFAULT_ASCII_PARAMS,
+  dreamGridParams: DEFAULT_DREAM_GRID_PARAMS,
   locale: 'en',
   theme: 'dark',
 }
 
-function reducer(state: AppState, action: Action): AppState {
+export function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SET_IMAGE':
       return { ...state, image: action.payload }
@@ -34,6 +37,15 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, glitchParams: { ...state.glitchParams, ...action.payload } }
     case 'SET_ASCII_PARAMS':
       return { ...state, asciiParams: { ...state.asciiParams, ...action.payload } }
+    case 'SET_DREAM_GRID_PARAMS':
+      return {
+        ...state,
+        dreamGridParams: {
+          ...state.dreamGridParams,
+          ...action.payload,
+          amount: Math.max(0, Math.min(100, (action.payload.amount ?? state.dreamGridParams.amount))),
+        },
+      }
     case 'SET_GLITCH_PRESET':
       return { ...state, glitchParams: action.payload }
     case 'SET_ASCII_PRESET':
@@ -61,5 +73,5 @@ export function useAppState() {
 }
 
 export function useAppReducer() {
-  return useReducer(reducer, initialState)
+  return useReducer(appReducer, initialAppState)
 }

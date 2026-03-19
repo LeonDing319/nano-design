@@ -20,7 +20,10 @@
       "Bash(python /tmp/screenshot.py)",
       "Bash(gh repo:*)",
       "Bash(npx next:*)",
-      "Bash(cp -r /tmp/anthropic-skills/skills/skill-creator ~/.claude/skills/skill-creator)"
+      "Bash(cp -r /tmp/anthropic-skills/skills/skill-creator ~/.claude/skills/skill-creator)",
+      "Bash(alias cc:*)",
+      "Read(//Users/admin/**)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef, memo }
 import { useAppState } from '@/hooks/useEffectParams'
 import { renderGlitch } from '@/engines/glitch'
 import { renderAscii } from '@/engines/ascii'
+import { renderDreamGridOverlay } from '@/engines/dream-grid'
 
 const MAX_DISPLAY_DIM = 1200
 
@@ -11,6 +12,16 @@ export function getDisplaySize(image: HTMLImageElement) {
   const { naturalWidth: w, naturalHeight: h } = image
   const scale = Math.min(MAX_DISPLAY_DIM / Math.max(w, h), 1)
   return { width: Math.round(w * scale), height: Math.round(h * scale) }
+}
+
+function renderOriginal(
+  ctx: CanvasRenderingContext2D,
+  sourceImage: HTMLImageElement,
+  canvasWidth: number,
+  canvasHeight: number
+) {
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+  ctx.drawImage(sourceImage, 0, 0, canvasWidth, canvasHeight)
 }
 
 export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCanvas(_, ref) {
@@ -45,8 +56,14 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
 
     if (state.activeEffect === 'glitch') {
       renderGlitch(ctx, state.image, state.glitchParams, width, height, frameRef.current)
-    } else {
+    } else if (state.activeEffect === 'ascii') {
       renderAscii(ctx, state.image, state.asciiParams, width, height)
+    } else {
+      renderOriginal(ctx, state.image, width, height)
+    }
+
+    if (state.activeEffect !== 'other') {
+      renderDreamGridOverlay(ctx, width, height, state.dreamGridParams)
     }
   }, [state])
 
