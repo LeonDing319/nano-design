@@ -23,7 +23,14 @@
       "Bash(cp -r /tmp/anthropic-skills/skills/skill-creator ~/.claude/skills/skill-creator)",
       "Bash(alias cc:*)",
       "Read(//Users/admin/**)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "WebFetch(domain:artkit.cc)",
+      "Bash(node -e \"JSON.parse\\(require\\(''fs''\\).readFileSync\\(''src/i18n/zh.json'',''utf8''\\)\\); console.log\\(''zh.json OK''\\)\")",
+      "Bash(node -e \"JSON.parse\\(require\\(''fs''\\).readFileSync\\(''src/i18n/en.json'',''utf8''\\)\\); console.log\\(''en.json OK''\\)\")",
+      "WebFetch(domain:www.ascii-magic.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:docs-assets.developer.apple.com)"
     ]
   }
 }

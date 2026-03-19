@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef, memo } from 'react'
 import { useAppState } from '@/hooks/useEffectParams'
-import { renderGlitch } from '@/engines/glitch'
+import { renderGlitch, applyDuotone } from '@/engines/glitch'
 import { renderAscii } from '@/engines/ascii'
 
 const MAX_DISPLAY_DIM = 1200
@@ -61,6 +61,9 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
       renderAscii(ctx, source, state.asciiParams, width, height, frameRef.current)
     } else {
       renderOriginal(ctx, source, width, height)
+      if (state.glitchParams.duotone) {
+        applyDuotone(ctx, canvas.width, canvas.height, state.glitchParams.duotoneLightColor, state.glitchParams.duotoneDarkColor)
+      }
     }
 
   }, [state])

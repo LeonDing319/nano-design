@@ -55,7 +55,7 @@ function ensureDuotoneFilter(lightHex: string, darkHex: string) {
   duotoneLastDark = darkHex
 }
 
-function applyDuotone(
+export function applyDuotone(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,

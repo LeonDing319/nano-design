@@ -111,39 +111,6 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               />
             </ControlGroup>
 
-            <div className="space-y-3">
-              <Toggle
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Palette style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('duotone')}</span>}
-                checked={state.glitchParams.duotone}
-                onChange={(v) => setGlitch('duotone', v)}
-                disabled={disabled}
-              />
-              {state.glitchParams.duotone && (
-                <div className="flex items-center gap-3" style={{ opacity: disabled ? 0.4 : 1 }}>
-                  <label className="flex items-center gap-1.5 text-sm text-neutral-300">
-                    {t('duotoneLightColor')}
-                    <input
-                      type="color"
-                      value={state.glitchParams.duotoneLightColor}
-                      onChange={(e) => setGlitch('duotoneLightColor', e.target.value)}
-                      disabled={disabled}
-                      className="color-swatch"
-                    />
-                  </label>
-                  <label className="flex items-center gap-1.5 text-sm text-neutral-300">
-                    {t('duotoneDarkColor')}
-                    <input
-                      type="color"
-                      value={state.glitchParams.duotoneDarkColor}
-                      onChange={(e) => setGlitch('duotoneDarkColor', e.target.value)}
-                      disabled={disabled}
-                      className="color-swatch"
-                    />
-                  </label>
-                </div>
-              )}
-            </div>
-
             <ControlGroup>
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Move style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('dotSize')}</span>}
@@ -365,8 +332,37 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             </div>
           </>
         ) : (
-          <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 14 }}>
-            Coming soon...
+          <div className="space-y-3">
+            <Toggle
+              label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Palette style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('duotone')}</span>}
+              checked={state.glitchParams.duotone}
+              onChange={(v) => setGlitch('duotone', v)}
+              disabled={disabled}
+            />
+            {state.glitchParams.duotone && (
+              <div className="flex items-center gap-3" style={{ opacity: disabled ? 0.4 : 1 }}>
+                <label className="flex items-center gap-1.5 text-sm text-neutral-300">
+                  {t('duotoneLightColor')}
+                  <input
+                    type="color"
+                    value={state.glitchParams.duotoneLightColor}
+                    onChange={(e) => setGlitch('duotoneLightColor', e.target.value)}
+                    disabled={disabled}
+                    className="color-swatch"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5 text-sm text-neutral-300">
+                  {t('duotoneDarkColor')}
+                  <input
+                    type="color"
+                    value={state.glitchParams.duotoneDarkColor}
+                    onChange={(e) => setGlitch('duotoneDarkColor', e.target.value)}
+                    disabled={disabled}
+                    className="color-swatch"
+                  />
+                </label>
+              </div>
+            )}
           </div>
         )}
 
