@@ -149,8 +149,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                 value={state.asciiParams.renderMode}
                 options={[
                   { value: 'brightness', label: t('renderModeOptions.brightness') },
-                  { value: 'edge', label: t('renderModeOptions.edge') },
-                  { value: 'dots', label: t('renderModeOptions.dots') },
+                  { value: 'edges', label: t('renderModeOptions.edges') },
                 ]}
                 onChange={(v) => setAscii('renderMode', v)}
                 disabled={disabled}
@@ -159,10 +158,11 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                 label={t('charSet')}
                 value={state.asciiParams.charSet}
                 options={[
-                  { value: 'standard', label: t('charSetOptions.standard') },
-                  { value: 'detailed', label: t('charSetOptions.detailed') },
+                  { value: 'dense', label: t('charSetOptions.dense') },
+                  { value: 'classic', label: t('charSetOptions.classic') },
+                  { value: 'binary', label: t('charSetOptions.binary') },
                   { value: 'minimal', label: t('charSetOptions.minimal') },
-                  { value: 'blocks', label: t('charSetOptions.blocks') },
+                  { value: 'retro', label: t('charSetOptions.retro') },
                   { value: 'custom', label: t('charSetOptions.custom') },
                 ]}
                 onChange={(v) => setAscii('charSet', v)}
@@ -190,7 +190,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               )}
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Type style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('fontSize')}</span>}
-                value={state.asciiParams.fontSize} min={10} max={40}
+                value={state.asciiParams.fontSize} min={6} max={28} step={2}
                 onChange={(v) => setAscii('fontSize', v)}
                 disabled={disabled}
                 sound="mech5"
@@ -200,7 +200,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             <ControlGroup>
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Eye style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('coverage')}</span>}
-                value={state.asciiParams.coverage} min={0} max={100}
+                value={state.asciiParams.coverage} min={10} max={100}
                 onChange={(v) => setAscii('coverage', v)}
                 disabled={disabled}
                 sound="mech5"
@@ -244,22 +244,9 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             </ControlGroup>
 
             <ControlGroup>
-              <ButtonGroup
-                label={t('blendMode')}
-                value={state.asciiParams.blendMode}
-                options={[
-                  { value: 'source-over', label: t('blendModeOptions.normal') },
-                  { value: 'overlay', label: t('blendModeOptions.overlay') },
-                  { value: 'color-dodge', label: t('blendModeOptions.colorDodge') },
-                  { value: 'screen', label: t('blendModeOptions.screen') },
-                  { value: 'lighter', label: t('blendModeOptions.lighter') },
-                ]}
-                onChange={(v) => setAscii('blendMode', v)}
-                disabled={disabled}
-              />
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Palette style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('charOpacity')}</span>}
-                value={state.asciiParams.charOpacity} min={0} max={100}
+                value={state.asciiParams.charOpacity} min={10} max={100}
                 onChange={(v) => setAscii('charOpacity', v)}
                 disabled={disabled}
                 sound="mech5"
@@ -275,6 +262,20 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Contrast style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('contrast')}</span>}
                 value={state.asciiParams.contrast} min={-100} max={100}
                 onChange={(v) => setAscii('contrast', v)}
+                disabled={disabled}
+                sound="mech5"
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Sun style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('charBrightness')}</span>}
+                value={state.asciiParams.charBrightness} min={-100} max={100}
+                onChange={(v) => setAscii('charBrightness', v)}
+                disabled={disabled}
+                sound="mech5"
+              />
+              <Slider
+                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Contrast style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('charContrast')}</span>}
+                value={state.asciiParams.charContrast} min={-100} max={100}
+                onChange={(v) => setAscii('charContrast', v)}
                 disabled={disabled}
                 sound="mech5"
               />
@@ -303,14 +304,14 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                 <>
                   <Slider
                     label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ArrowDownUp style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('animSpeed')}</span>}
-                    value={state.asciiParams.animSpeed} min={500} max={5000} step={100}
+                    value={state.asciiParams.animSpeed} min={0.2} max={5} step={0.1}
                     onChange={(v) => setAscii('animSpeed', v)}
                     disabled={disabled}
                     sound="mech5"
                   />
                   <Slider
                     label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Layers style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('animIntensity')}</span>}
-                    value={state.asciiParams.animIntensity} min={0} max={100}
+                    value={state.asciiParams.animIntensity} min={10} max={100}
                     onChange={(v) => setAscii('animIntensity', v)}
                     disabled={disabled}
                     sound="mech5"

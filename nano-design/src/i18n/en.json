@@ -37,15 +37,15 @@
     "renderMode": "Render Mode",
     "renderModeOptions": {
       "brightness": "Brightness",
-      "edge": "Edge Map",
-      "dots": "Dot Matrix"
+      "edges": "Edges"
     },
     "charSet": "Character Set",
     "charSetOptions": {
-      "standard": "Standard",
-      "detailed": "Detailed",
+      "dense": "Dense",
+      "classic": "Classic",
+      "binary": "Binary",
       "minimal": "Minimal",
-      "blocks": "Blocks",
+      "retro": "Retro",
       "custom": "Custom"
     },
     "fontSize": "Font Size",
@@ -54,20 +54,14 @@
     "bgColor": "Background Color",
     "bgBlur": "Background Blur",
     "bgOpacity": "Background Opacity",
-    "blendMode": "Blend Mode",
-    "blendModeOptions": {
-      "normal": "Normal",
-      "overlay": "Overlay",
-      "colorDodge": "Color Dodge",
-      "screen": "Screen",
-      "lighter": "Lighter"
-    },
     "customCharsPlaceholder": "Enter custom characters...",
-    "charOpacity": "Character Opacity",
+    "charOpacity": "Char Opacity",
     "brightness": "Brightness",
     "contrast": "Contrast",
-    "invert": "Invert",
-    "dotGrid": "Dot Grid",
+    "charBrightness": "Char Brightness",
+    "charContrast": "Char Contrast",
+    "invert": "Invert Mapping",
+    "dotGrid": "Dot Grid Overlay",
     "animated": "Animation",
     "animSpeed": "Animation Speed",
     "animIntensity": "Animation Intensity",

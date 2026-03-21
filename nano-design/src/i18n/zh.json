@@ -37,15 +37,15 @@
     "renderMode": "渲染模式",
     "renderModeOptions": {
       "brightness": "亮度",
-      "edge": "边缘检测",
-      "dots": "点阵"
+      "edges": "边缘"
     },
     "charSet": "字体样式",
     "charSetOptions": {
-      "standard": "标准",
-      "detailed": "详细",
+      "dense": "密集",
+      "classic": "经典",
+      "binary": "二进制",
       "minimal": "简约",
-      "blocks": "方块",
+      "retro": "复古",
       "custom": "自定义"
     },
     "fontSize": "字体大小",
@@ -54,20 +54,14 @@
     "bgColor": "背景颜色",
     "bgBlur": "背景模糊",
     "bgOpacity": "背景透明",
-    "blendMode": "混合模式",
-    "blendModeOptions": {
-      "normal": "正常",
-      "overlay": "叠加",
-      "colorDodge": "颜色减淡",
-      "screen": "滤色",
-      "lighter": "变亮"
-    },
     "customCharsPlaceholder": "输入自定义字符...",
     "charOpacity": "字符透明度",
     "brightness": "亮度",
     "contrast": "对比度",
-    "invert": "反色",
-    "dotGrid": "点网格",
+    "charBrightness": "字符亮度",
+    "charContrast": "字符对比度",
+    "invert": "反转映射",
+    "dotGrid": "点网格叠加",
     "animated": "动画",
     "animSpeed": "动画速度",
     "animIntensity": "动画强度",

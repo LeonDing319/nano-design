@@ -1,62 +1,37 @@
 import type { AsciiParams } from '@/types'
 import { ASCII_CHAR_SETS } from '@/presets/ascii-presets'
 
-function clamp(min: number, max: number, v: number): number {
-  return v < min ? min : v > max ? max : v
-}
+type ImageSource = HTMLImageElement | HTMLVideoElement
 
-interface EdgeMap {
-  data: Float32Array
-  width: number
-  height: number
-}
-
-function computeEdgeMap(imageData: ImageData, w: number, h: number): EdgeMap {
-  const pixels = imageData.data
+/**
+ * Sobel edge map — matches Budarina's mx() exactly.
+ * Grayscale normalised to [0,1], edge magnitudes clamped to [0,1] (no global normalisation).
+ */
+function computeEdgeMap(pixels: Uint8ClampedArray, w: number, h: number): Float32Array {
   const gray = new Float32Array(w * h)
   for (let i = 0; i < w * h; i++) {
     const off = i * 4
-    gray[i] = 0.299 * pixels[off] + 0.587 * pixels[off + 1] + 0.114 * pixels[off + 2]
+    gray[i] = (pixels[off] * 0.299 + pixels[off + 1] * 0.587 + pixels[off + 2] * 0.114) / 255
   }
 
   const edges = new Float32Array(w * h)
-  let maxEdge = 0
-
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
-      const idx = y * w + x
-      const gx =
-        -gray[(y - 1) * w + (x - 1)] + gray[(y - 1) * w + (x + 1)]
-        - 2 * gray[y * w + (x - 1)] + 2 * gray[y * w + (x + 1)]
-        - gray[(y + 1) * w + (x - 1)] + gray[(y + 1) * w + (x + 1)]
-      const gy =
-        -gray[(y - 1) * w + (x - 1)] - 2 * gray[(y - 1) * w + x] - gray[(y - 1) * w + (x + 1)]
-        + gray[(y + 1) * w + (x - 1)] + 2 * gray[(y + 1) * w + x] + gray[(y + 1) * w + (x + 1)]
-      const mag = Math.sqrt(gx * gx + gy * gy)
-      edges[idx] = mag
-      if (mag > maxEdge) maxEdge = mag
+      const tl = gray[(y - 1) * w + (x - 1)]
+      const tc = gray[(y - 1) * w + x]
+      const tr = gray[(y - 1) * w + (x + 1)]
+      const ml = gray[y * w + (x - 1)]
+      const mr = gray[y * w + (x + 1)]
+      const bl = gray[(y + 1) * w + (x - 1)]
+      const bc = gray[(y + 1) * w + x]
+      const br = gray[(y + 1) * w + (x + 1)]
+
+      const gx = -tl + tr - 2 * ml + 2 * mr - bl + br
+      const gy = -tl - 2 * tc - tr + bl + 2 * bc + br
+      edges[y * w + x] = Math.min(1, Math.sqrt(gx * gx + gy * gy))
     }
   }
-
-  if (maxEdge > 0) {
-    const inv = 1 / maxEdge
-    for (let i = 0; i < edges.length; i++) {
-      edges[i] *= inv
-    }
-  }
-
-  return { data: edges, width: w, height: h }
-}
-
-let samplerCanvas: HTMLCanvasElement | null = null
-
-type ImageSource = HTMLImageElement | HTMLVideoElement
-
-function sourceWidth(src: ImageSource): number {
-  return src instanceof HTMLVideoElement ? src.videoWidth : src.naturalWidth
-}
-function sourceHeight(src: ImageSource): number {
-  return src instanceof HTMLVideoElement ? src.videoHeight : src.naturalHeight
+  return edges
 }
 
 export function renderAscii(
@@ -67,223 +42,175 @@ export function renderAscii(
   canvasHeight: number,
   animationFrame?: number
 ) {
-  const {
-    renderMode,
-    charSet,
-    customChars,
-    fontSize,
-    coverage,
-    edgeEmphasis,
-    bgColor,
-    bgBlur,
-    bgOpacity,
-    blendMode,
-    charOpacity,
-    brightness,
-    contrast,
-    invert,
-    dotGrid,
-    animated,
-    animSpeed,
-    animIntensity,
-    animRandomness,
-  } = params
+  const w = canvasWidth
+  const h = canvasHeight
+  if (w <= 0 || h <= 0) return
 
-  const charW = fontSize * 0.6
-  const charH = fontSize
-  const cols = Math.floor(canvasWidth / charW)
-  const rows = Math.floor(canvasHeight / charH)
+  // --- Sample source at canvas resolution ---
+  const samplerCanvas = document.createElement('canvas')
+  samplerCanvas.width = w
+  samplerCanvas.height = h
+  const samplerCtx = samplerCanvas.getContext('2d', { willReadFrequently: true })!
+  samplerCtx.drawImage(sourceImage, 0, 0, w, h)
+  const pixels = samplerCtx.getImageData(0, 0, w, h).data
 
-  if (cols <= 0 || rows <= 0) return
-
-  const chars = charSet === 'custom' ? customChars : (ASCII_CHAR_SETS[charSet] || ASCII_CHAR_SETS.standard)
-  if (!chars || chars.length === 0) return
-
-  // Compute layout at full resolution (needed for background drawing)
-  const srcW = sourceWidth(sourceImage)
-  const srcH = sourceHeight(sourceImage)
-  const scale = Math.min(canvasWidth / srcW, canvasHeight / srcH)
-  const imgW = srcW * scale
-  const imgH = srcH * scale
-  const imgX = (canvasWidth - imgW) / 2
-  const imgY = (canvasHeight - imgH) / 2
-
-  // Draw source to temp canvas at LOW resolution (cols × rows) for sampling
-  if (!samplerCanvas) samplerCanvas = document.createElement('canvas')
-  if (samplerCanvas.width !== cols || samplerCanvas.height !== rows) {
-    samplerCanvas.width = cols
-    samplerCanvas.height = rows
-  }
-  const samplerCtx = samplerCanvas.getContext('2d')!
-  samplerCtx.clearRect(0, 0, cols, rows)
-
-  // Stretch source to fill entire grid — char aspect ratio (0.6:1) compensates on render
-  samplerCtx.drawImage(sourceImage, 0, 0, cols, rows)
-
-  const imageData = samplerCtx.getImageData(0, 0, cols, rows)
-  const pixels = imageData.data
-
-  const edgeMap = computeEdgeMap(imageData, cols, rows)
-
-  // Contrast/brightness mapping
-  const contrastMapped = contrast * 2.55
-  const contrastFactor = (259 * (contrastMapped + 255)) / (255 * (259 - contrastMapped))
-  const brightnessMapped = (brightness / 100) * 255
-
-  const edgeWeight = renderMode === 'edge'
-    ? (edgeEmphasis / 100) * 2.0
-    : (edgeEmphasis / 100)
-
-  const coverageThreshold = 1 - coverage / 100
+  // --- Edge map at full resolution ---
+  const edgeMap = computeEdgeMap(pixels, w, h)
 
   // --- Background ---
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+  ctx.clearRect(0, 0, w, h)
+  ctx.fillStyle = params.bgColor
+  ctx.fillRect(0, 0, w, h)
 
-  // 1. Fill background color
-  ctx.fillStyle = bgColor
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-
-  // 2. Draw source image with blur and opacity
-  const bgAlpha = bgOpacity / 100
+  const bgAlpha = params.bgOpacity / 100
   if (bgAlpha > 0) {
-    const offscreen = document.createElement('canvas')
-    offscreen.width = canvasWidth
-    offscreen.height = canvasHeight
-    const offCtx = offscreen.getContext('2d')!
-    if (bgBlur > 0) {
-      const extend = bgBlur * 2
-      offCtx.filter = `blur(${bgBlur}px)`
-      offCtx.drawImage(sourceImage, imgX - extend, imgY - extend, imgW + extend * 2, imgH + extend * 2)
-      offCtx.filter = 'none'
+    const bgCanvas = document.createElement('canvas')
+    bgCanvas.width = w
+    bgCanvas.height = h
+    const bgCtx = bgCanvas.getContext('2d')!
+    if (params.bgBlur > 0) {
+      const blur = params.bgBlur
+      bgCtx.filter = `blur(${blur}px)`
+      bgCtx.drawImage(sourceImage, -blur * 2, -blur * 2, w + blur * 4, h + blur * 4)
+      bgCtx.filter = 'none'
     } else {
-      offCtx.drawImage(sourceImage, imgX, imgY, imgW, imgH)
+      bgCtx.drawImage(sourceImage, 0, 0, w, h)
     }
     ctx.save()
     ctx.globalAlpha = bgAlpha
-    ctx.drawImage(offscreen, 0, 0)
+    ctx.drawImage(bgCanvas, 0, 0)
     ctx.globalAlpha = 1
     ctx.restore()
   }
 
-  // --- Dot grid ---
-  if (dotGrid) {
-    ctx.save()
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)'
-    const dotR = Math.max(0.5, fontSize * 0.06)
-    ctx.beginPath()
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
-        ctx.moveTo((col + 0.5) * charW + dotR, (row + 0.5) * charH)
-        ctx.arc((col + 0.5) * charW, (row + 0.5) * charH, dotR, 0, Math.PI * 2)
-      }
-    }
-    ctx.fill()
-    ctx.restore()
-  }
+  // --- Parameters ---
+  const S = Math.max(5, params.fontSize)
+  const colW = S * 0.62
+  const rowH = S * 1.15
+  const chars = params.charSet === 'custom'
+    ? params.customChars
+    : (ASCII_CHAR_SETS[params.charSet] || ASCII_CHAR_SETS.dense)
+  if (!chars || chars.length === 0) return
+  const numChars = chars.length
 
-  // --- Set blend mode ---
-  ctx.save()
-  ctx.globalCompositeOperation = blendMode as GlobalCompositeOperation
+  const V = params.coverage / 100
+  const X = params.edgeEmphasis / 100
+  const invertMapping = params.invert
 
-  ctx.font = `${fontSize}px "Courier New", Courier, monospace`
-  ctx.textBaseline = 'top'
+  // charBrightness / charContrast (Budarina's char-level color adjustments)
+  const cbVal = params.charBrightness
+  const ccVal = params.charContrast
+  const cbOffset = (cbVal / 100) * 128
+  const ccFactor = ccVal >= 0 ? 1 + ccVal / 100 : 1 / (1 - ccVal / 100)
 
-  // --- Render characters / dots ---
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      // Sample directly from low-res buffer using row/col index
-      const pixIdx = (row * cols + col) * 4
+  // --- Build cells (matching Budarina's Is() loop) ---
+  interface Cell { cx: number; cy: number; ch: string; fillStyle: string; phase: number }
+  const cells: Cell[] = []
+
+  for (let cellY = 0; cellY < h; cellY += rowH) {
+    for (let cellX = 0; cellX < w; cellX += colW) {
+      // Sample center pixel
+      const sampleX = Math.min(w - 1, Math.floor(cellX + colW / 2))
+      const sampleY = Math.min(h - 1, Math.floor(cellY + rowH / 2))
+      const pixIdx = (sampleY * w + sampleX) * 4
+
       let r = pixels[pixIdx]
       let g = pixels[pixIdx + 1]
       let b = pixels[pixIdx + 2]
-      const a = pixels[pixIdx + 3]
 
-      if (a === 0) continue
+      // Luminance from original pixels
+      const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255
 
-      // Apply brightness & contrast
-      r = clamp(0, 255, contrastFactor * (r - 128) + 128 + brightnessMapped)
-      g = clamp(0, 255, contrastFactor * (g - 128) + 128 + brightnessMapped)
-      b = clamp(0, 255, contrastFactor * (b - 128) + 128 + brightnessMapped)
-
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b
-
-      const edgeIdx = row * cols + col
-      const edgeVal = edgeMap.data[edgeIdx]
-
-      const brightnessScore = lum / 255
-      const amplifiedEdge = Math.pow(edgeVal, 0.3)
-      const edgeBoost = amplifiedEdge * edgeWeight * 4.0
-      const visibility = Math.min(1, brightnessScore + edgeBoost)
-
-      if (visibility < coverageThreshold) continue
-
-      let normLum = lum / 255
-      if (invert) normLum = 1 - normLum
-
-      if (renderMode === 'dots') {
-        const maxR = Math.min(charW, charH) * 0.5
-        const dotRadius = maxR * (0.15 + 0.85 * normLum)
-        if (dotRadius < 0.3) continue
-
-        let finalAlpha = charOpacity / 100
-
-        if (animated && animationFrame !== undefined) {
-          const randomness = animRandomness / 100
-          const scanPhase = row / rows
-          const randPhase = ((col * 7919 + row * 6271 + col * col * 3571) % 10000) / 10000
-          const phase = scanPhase * (1 - randomness) + randPhase * randomness
-          const jitter = randomness * ((col * 1301 + row * 9377) % 1000) / 1000 * 0.3
-          const t = ((animationFrame / (animSpeed / 16.67)) + phase + jitter) % 1
-          const wave = Math.sin(t * Math.PI * 2)
-          const intensity = animIntensity / 100
-          const minAlpha = 1 - intensity
-          finalAlpha = (charOpacity / 100) * (minAlpha + (1 - minAlpha) * (0.5 + 0.5 * wave))
+      // Average edge value in cell region (step by 2)
+      const x0 = Math.max(0, Math.floor(cellX))
+      const x1 = Math.min(w - 1, Math.floor(cellX + colW))
+      const y0 = Math.max(0, Math.floor(cellY))
+      const y1 = Math.min(h - 1, Math.floor(cellY + rowH))
+      let edgeSum = 0
+      let edgeCount = 0
+      for (let ey = y0; ey <= y1; ey += 2) {
+        for (let ex = x0; ex <= x1; ex += 2) {
+          edgeSum += edgeMap[ey * w + ex]
+          edgeCount++
         }
+      }
+      const edgeAvg = edgeCount > 0 ? edgeSum / edgeCount : 0
 
-        ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${finalAlpha})`
+      // Coverage filter
+      if (V < 1 && lum > V) continue
+
+      // Char score
+      let charScore = params.renderMode === 'edges'
+        ? 1 - Math.min(1, edgeAvg / (1 - V + 0.001))
+        : lum
+
+      if (invertMapping) charScore = 1 - charScore
+
+      // Edge emphasis blending
+      charScore = Math.max(0, Math.min(1,
+        charScore * (1 - X) + (1 - edgeAvg) * X * charScore
+      ))
+
+      // Pick character
+      const ch = chars[Math.floor(charScore * (numChars - 1))]
+      if (!ch || ch === ' ') continue
+
+      // Apply charBrightness / charContrast to color (Budarina's exact formula)
+      if (cbVal !== 0 || ccVal !== 0) {
+        r = Math.max(0, Math.min(255, (r + cbOffset - 128) * ccFactor + 128))
+        g = Math.max(0, Math.min(255, (g + cbOffset - 128) * ccFactor + 128))
+        b = Math.max(0, Math.min(255, (b + cbOffset - 128) * ccFactor + 128))
+      }
+
+      const fillStyle = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`
+
+      cells.push({ cx: cellX + colW / 2, cy: cellY + rowH / 2, ch, fillStyle, phase: Math.random() * Math.PI * 2 })
+    }
+  }
+
+  // --- Dot grid ---
+  if (params.dotGrid) {
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'
+    for (let y = 0; y < h; y += rowH) {
+      for (let x = 0; x < w; x += colW) {
         ctx.beginPath()
-        ctx.arc((col + 0.5) * charW, (row + 0.5) * charH, dotRadius, 0, Math.PI * 2)
+        ctx.arc(x + colW / 2, y + rowH / 2, 0.8, 0, Math.PI * 2)
         ctx.fill()
-      } else {
-        let charScore: number
-        if (renderMode === 'edge') {
-          const edgeScore = Math.pow(edgeVal, 0.3) * (edgeEmphasis / 100) * 3.0
-          charScore = clamp(0, 1, edgeScore + normLum * 0.15)
-        } else {
-          charScore = clamp(0, 1, normLum + edgeBoost * 1.5)
-        }
-        const charIdx = Math.min(chars.length - 1, Math.floor((1 - charScore) * chars.length))
-        let finalChar = chars[charIdx]
-        let finalAlpha = charOpacity / 100
-
-        if (animated && animationFrame !== undefined) {
-          const randomness = animRandomness / 100
-          const scanPhase = row / rows
-          const randPhase = ((col * 7919 + row * 6271 + col * col * 3571) % 10000) / 10000
-          const phase = scanPhase * (1 - randomness) + randPhase * randomness
-          const jitter = randomness * ((col * 1301 + row * 9377) % 1000) / 1000 * 0.3
-          const t = ((animationFrame / (animSpeed / 16.67)) + phase + jitter) % 1
-          const wave = Math.sin(t * Math.PI * 2)
-          const intensity = animIntensity / 100
-          const minAlpha = 1 - intensity
-          finalAlpha = (charOpacity / 100) * (minAlpha + (1 - minAlpha) * (0.5 + 0.5 * wave))
-
-          // Character shimmer
-          if (intensity > 0.2 && chars.length > 1) {
-            const shimmerChance = wave < (-0.3 + randomness * 0.5)
-            if (shimmerChance) {
-              const shift = (((randPhase * 100 + animationFrame * 0.01) | 0) % 3) - 1
-              const newIdx = clamp(0, chars.length - 1, charIdx + shift)
-              finalChar = chars[newIdx]
-            }
-          }
-        }
-
-        ctx.fillStyle = `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${finalAlpha})`
-        ctx.fillText(finalChar, col * charW, row * charH)
       }
     }
   }
 
+  // --- Draw cells (matching Budarina's Ls()) ---
+  ctx.save()
+
+  const charAlpha = params.charOpacity / 100
+  const animIntensityNorm = params.animIntensity / 100
+  const animRandomnessNorm = params.animRandomness / 100
+  const animSpeedVal = Math.max(0.1, params.animSpeed)
+
+  ctx.font = `bold ${S}px monospace`
+  ctx.textBaseline = 'middle'
+  ctx.textAlign = 'center'
+
+  const animTime = (animationFrame ?? 0) / 60
+
+  for (const cell of cells) {
+    if (params.animated && animationFrame !== undefined) {
+      const wave = Math.sin(animTime * animSpeedVal * Math.PI * 2 + cell.phase) * 0.5 + 0.5
+      const jitter = Math.random()
+      const blended = wave * (1 - animRandomnessNorm) + jitter * animRandomnessNorm
+      const alpha = Math.max(0, Math.min(1,
+        charAlpha * (1 - animIntensityNorm + animIntensityNorm * blended)
+      ))
+      ctx.globalAlpha = alpha
+    } else {
+      ctx.globalAlpha = charAlpha
+    }
+
+    ctx.fillStyle = cell.fillStyle
+    ctx.fillText(cell.ch, cell.cx, cell.cy)
+  }
+
+  ctx.globalAlpha = 1
   ctx.restore()
 }

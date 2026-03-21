@@ -18,10 +18,10 @@ export interface GlitchParams {
 
 export interface AsciiParams {
   // Characters
-  renderMode: 'brightness' | 'edge' | 'dots'
-  charSet: 'standard' | 'detailed' | 'minimal' | 'blocks' | 'custom'
+  renderMode: 'brightness' | 'edges'
+  charSet: 'dense' | 'classic' | 'binary' | 'minimal' | 'retro' | 'custom'
   customChars: string
-  fontSize: number           // 10-40
+  fontSize: number           // 6-28, step 2
 
   // Intensity
   coverage: number           // 0-100
@@ -33,16 +33,17 @@ export interface AsciiParams {
   bgOpacity: number          // 0-100
 
   // Color & Tone
-  blendMode: string
-  charOpacity: number        // 0-100
+  charOpacity: number        // 10-100
   brightness: number         // -100 to 100
   contrast: number           // -100 to 100
+  charBrightness: number     // -100 to 100
+  charContrast: number       // -100 to 100
   invert: boolean
   dotGrid: boolean
 
   // Animation
   animated: boolean
-  animSpeed: number          // 500-5000
+  animSpeed: number          // 0.1-5 频率倍率
   animIntensity: number      // 0-100
   animRandomness: number     // 0-100
 }
