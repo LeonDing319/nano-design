@@ -10,7 +10,7 @@
   },
   "upload": {
     "title": "上传",
-    "dragHint": "拖拽图片到此处或点击上传",
+    "dragHint": "拖拽图片到此处上传",
     "formats": "支持 JPG、PNG、WebP，最大 10MB",
     "dropOverlay": "将图片拖放到此处",
     "error": {
@@ -40,7 +40,7 @@
       "edge": "边缘检测",
       "dots": "点阵"
     },
-    "charSet": "字符集",
+    "charSet": "字体样式",
     "charSetOptions": {
       "standard": "标准",
       "detailed": "详细",
@@ -51,16 +51,9 @@
     "fontSize": "字体大小",
     "coverage": "覆盖率",
     "edgeEmphasis": "边缘强调",
-    "darkThreshold": "暗部阈值",
-    "bgMode": "背景模式",
-    "bgModeOptions": {
-      "blur": "模糊",
-      "solid": "纯黑",
-      "original": "原始",
-      "transparent": "透明"
-    },
-    "bgBlur": "模糊度",
-    "bgOpacity": "背景透明度",
+    "bgColor": "背景颜色",
+    "bgBlur": "背景模糊",
+    "bgOpacity": "背景透明",
     "blendMode": "混合模式",
     "blendModeOptions": {
       "normal": "正常",

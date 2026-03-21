@@ -8,7 +8,7 @@ import { Toggle } from '@/components/controls/Toggle'
 import { PresetPicker } from '@/components/controls/PresetPicker'
 import { GLITCH_PRESETS, DEFAULT_GLITCH_PARAMS } from '@/presets/glitch-presets'
 import { GlitchParams, AsciiParams } from '@/types'
-import { Select } from '@/components/controls/Select'
+import { ButtonGroup } from '@/components/controls/ButtonGroup'
 import { useTranslations } from 'next-intl'
 import { ControlGroup } from '@/components/controls/ControlGroup'
 import { VideoControls } from '@/components/controls/VideoControls'
@@ -37,7 +37,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
 
   return (
     <aside className="w-80 h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-secondary)', borderLeft: '1px solid var(--color-border-faint)' }}>
-      <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+      <div className="flex-shrink-0 p-4 pb-2 space-y-2.5" style={{ borderBottom: '1px solid var(--color-border-faint)' }}>
         <ImageUploader hasImage={hasImage} canvasRef={canvasRef} />
 
         {state.video && (
@@ -45,7 +45,9 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             <VideoControls video={state.video} />
           </ControlGroup>
         )}
+      </div>
 
+      <div className="flex-1 overflow-y-auto p-4 pt-2.5 space-y-2.5">
         {state.activeEffect === 'glitch' ? (
           <>
             <PresetPicker
@@ -142,7 +144,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
         ) : state.activeEffect === 'ascii' ? (
           <>
             <ControlGroup>
-              <Select
+              <ButtonGroup
                 label={t('renderMode')}
                 value={state.asciiParams.renderMode}
                 options={[
@@ -153,7 +155,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                 onChange={(v) => setAscii('renderMode', v)}
                 disabled={disabled}
               />
-              <Select
+              <ButtonGroup
                 label={t('charSet')}
                 value={state.asciiParams.charSet}
                 options={[
@@ -188,7 +190,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               )}
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Type style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('fontSize')}</span>}
-                value={state.asciiParams.fontSize} min={4} max={20}
+                value={state.asciiParams.fontSize} min={10} max={40}
                 onChange={(v) => setAscii('fontSize', v)}
                 disabled={disabled}
                 sound="mech5"
@@ -210,46 +212,39 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                 disabled={disabled}
                 sound="mech5"
               />
-              <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Sun style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('darkThreshold')}</span>}
-                value={state.asciiParams.darkThreshold} min={0} max={100}
-                onChange={(v) => setAscii('darkThreshold', v)}
-                disabled={disabled}
-                sound="mech5"
-              />
             </ControlGroup>
 
             <ControlGroup>
-              <Select
-                label={t('bgMode')}
-                value={state.asciiParams.bgMode}
-                options={[
-                  { value: 'blur', label: t('bgModeOptions.blur') },
-                  { value: 'solid', label: t('bgModeOptions.solid') },
-                  { value: 'original', label: t('bgModeOptions.original') },
-                  { value: 'transparent', label: t('bgModeOptions.transparent') },
-                ]}
-                onChange={(v) => setAscii('bgMode', v)}
-                disabled={disabled}
-              />
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Image style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('bgBlur')}</span>}
-                value={state.asciiParams.bgBlur} min={0} max={20}
+                value={state.asciiParams.bgBlur} min={0} max={80}
                 onChange={(v) => setAscii('bgBlur', v)}
-                disabled={disabled || state.asciiParams.bgMode !== 'blur'}
+                disabled={disabled}
                 sound="mech5"
               />
               <Slider
                 label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Eye style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('bgOpacity')}</span>}
                 value={state.asciiParams.bgOpacity} min={0} max={100}
                 onChange={(v) => setAscii('bgOpacity', v)}
-                disabled={disabled || state.asciiParams.bgMode === 'solid' || state.asciiParams.bgMode === 'transparent'}
+                disabled={disabled}
                 sound="mech5"
               />
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-neutral-300" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Palette style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('bgColor')}
+                </span>
+                <input
+                  type="color"
+                  value={state.asciiParams.bgColor}
+                  onChange={(e) => setAscii('bgColor', e.target.value)}
+                  disabled={disabled}
+                  className="color-swatch"
+                />
+              </div>
             </ControlGroup>
 
             <ControlGroup>
-              <Select
+              <ButtonGroup
                 label={t('blendMode')}
                 value={state.asciiParams.blendMode}
                 options={[
@@ -297,17 +292,17 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               />
             </ControlGroup>
 
-            <div className="space-y-3">
+            <ControlGroup>
               <Toggle
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Play style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('animated')}</span>}
+                label={t('animated')}
                 checked={state.asciiParams.animated}
                 onChange={(v) => setAscii('animated', v)}
                 disabled={disabled}
               />
               {state.asciiParams.animated && (
-                <ControlGroup>
+                <>
                   <Slider
-                    label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Play style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('animSpeed')}</span>}
+                    label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ArrowDownUp style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('animSpeed')}</span>}
                     value={state.asciiParams.animSpeed} min={500} max={5000} step={100}
                     onChange={(v) => setAscii('animSpeed', v)}
                     disabled={disabled}
@@ -327,9 +322,9 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                     disabled={disabled}
                     sound="mech5"
                   />
-                </ControlGroup>
+                </>
               )}
-            </div>
+            </ControlGroup>
           </>
         ) : (
           <div className="space-y-3">

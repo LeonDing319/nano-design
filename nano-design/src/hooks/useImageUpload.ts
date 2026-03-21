@@ -44,7 +44,11 @@ export function useImageUpload() {
       video.preload = 'auto'
       video.muted = true
       video.playsInline = true
-      video.onloadeddata = () => resolve(video)
+      video.loop = true
+      video.onloadeddata = () => {
+        video.play()
+        resolve(video)
+      }
       video.onerror = () => {
         URL.revokeObjectURL(url)
         reject(new Error(t('load')))

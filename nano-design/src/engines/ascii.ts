@@ -74,8 +74,7 @@ export function renderAscii(
     fontSize,
     coverage,
     edgeEmphasis,
-    darkThreshold,
-    bgMode,
+    bgColor,
     bgBlur,
     bgOpacity,
     blendMode,
@@ -100,15 +99,7 @@ export function renderAscii(
   const chars = charSet === 'custom' ? customChars : (ASCII_CHAR_SETS[charSet] || ASCII_CHAR_SETS.standard)
   if (!chars || chars.length === 0) return
 
-  // Draw source to temp canvas and get pixel data
-  if (!samplerCanvas) samplerCanvas = document.createElement('canvas')
-  if (samplerCanvas.width !== canvasWidth || samplerCanvas.height !== canvasHeight) {
-    samplerCanvas.width = canvasWidth
-    samplerCanvas.height = canvasHeight
-  }
-  const samplerCtx = samplerCanvas.getContext('2d')!
-  samplerCtx.clearRect(0, 0, canvasWidth, canvasHeight)
-
+  // Compute layout at full resolution (needed for background drawing)
   const srcW = sourceWidth(sourceImage)
   const srcH = sourceHeight(sourceImage)
   const scale = Math.min(canvasWidth / srcW, canvasHeight / srcH)
@@ -116,12 +107,23 @@ export function renderAscii(
   const imgH = srcH * scale
   const imgX = (canvasWidth - imgW) / 2
   const imgY = (canvasHeight - imgH) / 2
-  samplerCtx.drawImage(sourceImage, imgX, imgY, imgW, imgH)
 
-  const imageData = samplerCtx.getImageData(0, 0, canvasWidth, canvasHeight)
+  // Draw source to temp canvas at LOW resolution (cols × rows) for sampling
+  if (!samplerCanvas) samplerCanvas = document.createElement('canvas')
+  if (samplerCanvas.width !== cols || samplerCanvas.height !== rows) {
+    samplerCanvas.width = cols
+    samplerCanvas.height = rows
+  }
+  const samplerCtx = samplerCanvas.getContext('2d')!
+  samplerCtx.clearRect(0, 0, cols, rows)
+
+  // Stretch source to fill entire grid — char aspect ratio (0.6:1) compensates on render
+  samplerCtx.drawImage(sourceImage, 0, 0, cols, rows)
+
+  const imageData = samplerCtx.getImageData(0, 0, cols, rows)
   const pixels = imageData.data
 
-  const edgeMap = computeEdgeMap(imageData, canvasWidth, canvasHeight)
+  const edgeMap = computeEdgeMap(imageData, cols, rows)
 
   // Contrast/brightness mapping
   const contrastMapped = contrast * 2.55
@@ -133,26 +135,32 @@ export function renderAscii(
     : (edgeEmphasis / 100)
 
   const coverageThreshold = 1 - coverage / 100
-  const densityThresh = darkThreshold / 100
 
   // --- Background ---
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
-  if (bgMode === 'blur') {
+  // 1. Fill background color
+  ctx.fillStyle = bgColor
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+
+  // 2. Draw source image with blur and opacity
+  const bgAlpha = bgOpacity / 100
+  if (bgAlpha > 0) {
+    const offscreen = document.createElement('canvas')
+    offscreen.width = canvasWidth
+    offscreen.height = canvasHeight
+    const offCtx = offscreen.getContext('2d')!
+    if (bgBlur > 0) {
+      const extend = bgBlur * 2
+      offCtx.filter = `blur(${bgBlur}px)`
+      offCtx.drawImage(sourceImage, imgX - extend, imgY - extend, imgW + extend * 2, imgH + extend * 2)
+      offCtx.filter = 'none'
+    } else {
+      offCtx.drawImage(sourceImage, imgX, imgY, imgW, imgH)
+    }
     ctx.save()
-    ctx.filter = `blur(${bgBlur}px)`
-    ctx.globalAlpha = bgOpacity / 100
-    ctx.drawImage(sourceImage, imgX, imgY, imgW, imgH)
-    ctx.filter = 'none'
-    ctx.globalAlpha = 1
-    ctx.restore()
-  } else if (bgMode === 'solid') {
-    ctx.fillStyle = '#000000'
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight)
-  } else if (bgMode === 'original') {
-    ctx.save()
-    ctx.globalAlpha = bgOpacity / 100
-    ctx.drawImage(sourceImage, imgX, imgY, imgW, imgH)
+    ctx.globalAlpha = bgAlpha
+    ctx.drawImage(offscreen, 0, 0)
     ctx.globalAlpha = 1
     ctx.restore()
   }
@@ -183,11 +191,8 @@ export function renderAscii(
   // --- Render characters / dots ---
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const px = Math.floor((col + 0.5) * charW)
-      const py = Math.floor((row + 0.5) * charH)
-      if (px < 0 || px >= canvasWidth || py < 0 || py >= canvasHeight) continue
-
-      const pixIdx = (py * canvasWidth + px) * 4
+      // Sample directly from low-res buffer using row/col index
+      const pixIdx = (row * cols + col) * 4
       let r = pixels[pixIdx]
       let g = pixels[pixIdx + 1]
       let b = pixels[pixIdx + 2]
@@ -202,7 +207,7 @@ export function renderAscii(
 
       const lum = 0.299 * r + 0.587 * g + 0.114 * b
 
-      const edgeIdx = py * canvasWidth + px
+      const edgeIdx = row * cols + col
       const edgeVal = edgeMap.data[edgeIdx]
 
       const brightnessScore = lum / 255
@@ -210,9 +215,7 @@ export function renderAscii(
       const edgeBoost = amplifiedEdge * edgeWeight * 4.0
       const visibility = Math.min(1, brightnessScore + edgeBoost)
 
-      const adjustedThreshold = coverageThreshold * Math.pow(1 - densityThresh, 2)
-      const boostedVisibility = visibility + densityThresh * densityThresh
-      if (boostedVisibility < adjustedThreshold) continue
+      if (visibility < coverageThreshold) continue
 
       let normLum = lum / 255
       if (invert) normLum = 1 - normLum
@@ -242,9 +245,13 @@ export function renderAscii(
         ctx.arc((col + 0.5) * charW, (row + 0.5) * charH, dotRadius, 0, Math.PI * 2)
         ctx.fill()
       } else {
-        // brightness / edge mode
-        let charScore = normLum + edgeBoost * 1.5
-        charScore = clamp(0, 1, charScore)
+        let charScore: number
+        if (renderMode === 'edge') {
+          const edgeScore = Math.pow(edgeVal, 0.3) * (edgeEmphasis / 100) * 3.0
+          charScore = clamp(0, 1, edgeScore + normLum * 0.15)
+        } else {
+          charScore = clamp(0, 1, normLum + edgeBoost * 1.5)
+        }
         const charIdx = Math.min(chars.length - 1, Math.floor((1 - charScore) * chars.length))
         let finalChar = chars[charIdx]
         let finalAlpha = charOpacity / 100

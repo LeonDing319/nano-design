@@ -10,7 +10,7 @@
   },
   "upload": {
     "title": "Upload",
-    "dragHint": "Drag & drop image here or click to upload",
+    "dragHint": "Drag & drop image here to upload",
     "formats": "JPG, PNG, WebP supported, max 10MB",
     "dropOverlay": "Drop image here",
     "error": {
@@ -51,15 +51,8 @@
     "fontSize": "Font Size",
     "coverage": "Coverage",
     "edgeEmphasis": "Edge Emphasis",
-    "darkThreshold": "Dark Threshold",
-    "bgMode": "Background Mode",
-    "bgModeOptions": {
-      "blur": "Blur",
-      "solid": "Solid Black",
-      "original": "Original",
-      "transparent": "Transparent"
-    },
-    "bgBlur": "Blur Amount",
+    "bgColor": "Background Color",
+    "bgBlur": "Background Blur",
     "bgOpacity": "Background Opacity",
     "blendMode": "Blend Mode",
     "blendModeOptions": {

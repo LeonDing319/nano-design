@@ -30,7 +30,9 @@
       "WebFetch(domain:www.ascii-magic.com)",
       "WebFetch(domain:medium.com)",
       "WebFetch(domain:dev.to)",
-      "WebFetch(domain:docs-assets.developer.apple.com)"
+      "WebFetch(domain:docs-assets.developer.apple.com)",
+      "Bash(node -e \":*)",
+      "WebFetch(domain:budarina-lab.replit.app)"
     ]
   }
 }

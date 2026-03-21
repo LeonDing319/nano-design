@@ -288,7 +288,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
               position: 'relative',
               zIndex: 1,
               padding: '6px 0',
-              fontSize: 13,
+              fontSize: 14,
               borderRadius: 6,
               border: 'none',
               cursor: 'pointer',

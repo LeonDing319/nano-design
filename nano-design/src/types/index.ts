@@ -21,16 +21,15 @@ export interface AsciiParams {
   renderMode: 'brightness' | 'edge' | 'dots'
   charSet: 'standard' | 'detailed' | 'minimal' | 'blocks' | 'custom'
   customChars: string
-  fontSize: number           // 4-20
+  fontSize: number           // 10-40
 
   // Intensity
   coverage: number           // 0-100
   edgeEmphasis: number       // 0-100
-  darkThreshold: number      // 0-100
 
   // Background
-  bgMode: 'blur' | 'solid' | 'original' | 'transparent'
-  bgBlur: number             // 0-20
+  bgColor: string            // hex color
+  bgBlur: number             // 0-80
   bgOpacity: number          // 0-100
 
   // Color & Tone
@@ -66,7 +65,7 @@ export interface AppState {
   glitchParams: GlitchParams
   asciiParams: AsciiParams
   locale: 'zh' | 'en'
-  theme: 'dark' | 'light'
+  theme: 'dark'
 }
 
 export interface Preset<T> {

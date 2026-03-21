@@ -304,10 +304,10 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
           alignItems: 'center',
           height: 36,
           borderRadius: 18,
-          backgroundColor: 'var(--color-theme-toggle-bg)',
+          backgroundColor: 'var(--color-bg-elevated)',
           border: '1px solid var(--color-border-group)',
           fontSize: 13,
-          color: 'var(--color-theme-toggle-icon)',
+          color: 'var(--color-text-secondary)',
         }}
       >
         {source && (
@@ -346,7 +346,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
               transition: 'color 0.15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-theme-toggle-icon)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-secondary)' }}
           >
             <Maximize style={{ width: 14, height: 14 }} />
           </button>
