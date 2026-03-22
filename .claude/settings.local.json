@@ -33,7 +33,9 @@
       "WebFetch(domain:docs-assets.developer.apple.com)",
       "Bash(node -e \":*)",
       "WebFetch(domain:budarina-lab.replit.app)",
-      "Bash(grep -oE '\\(renderMode|characterSet|charSet|render_mode|character_set|Render Mode|Character Set\\)[^,}]{0,100}')"
+      "Bash(grep -oE '\\(renderMode|characterSet|charSet|render_mode|character_set|Render Mode|Character Set\\)[^,}]{0,100}')",
+      "WebFetch(domain:uk.pinterest.com)",
+      "Bash(npm test:*)"
     ]
   }
 }

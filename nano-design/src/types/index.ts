@@ -1,4 +1,4 @@
-export type EffectType = 'glitch' | 'ascii' | 'other'
+export type EffectType = 'ascii' | 'glitch' | 'other'
 
 export interface GlitchParams {
   stripeDensity: number      // 0-50

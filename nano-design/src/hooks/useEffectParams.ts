@@ -28,7 +28,7 @@ export const initialAppState: AppState = {
   image: null,
   video: null,
   videoPlayback: DEFAULT_VIDEO_PLAYBACK,
-  activeEffect: 'glitch',
+  activeEffect: 'ascii',
   glitchParams: DEFAULT_GLITCH_PARAMS,
   asciiParams: DEFAULT_ASCII_PARAMS,
   locale: 'en',

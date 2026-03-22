@@ -107,7 +107,6 @@ export async function exportMP4(
   })
 
   let codec = 'avc1.640028'
-  let encoder: VideoEncoder
   try {
     const support = await VideoEncoder.isConfigSupported({
       codec,
@@ -120,9 +119,10 @@ export async function exportMP4(
     codec = 'avc1.42001f'
   }
 
-  encoder = new VideoEncoder({
+  let encoderError: DOMException | Error | null = null
+  const encoder = new VideoEncoder({
     output: (chunk, meta) => muxer.addVideoChunk(chunk, meta ?? undefined),
-    error: (e) => console.error('VideoEncoder error:', e),
+    error: (e) => { encoderError = e },
   })
 
   encoder.configure({
@@ -136,10 +136,13 @@ export async function exportMP4(
   const frameDuration = 1_000_000 / options.fps // microseconds
 
   for (let i = 0; i < totalFrames; i++) {
+    if (encoder.state === 'closed') {
+      throw encoderError || new Error('VideoEncoder closed unexpectedly')
+    }
+
     renderFrame(i)
 
-    const bitmap = await createImageBitmap(canvas)
-    const frame = new VideoFrame(bitmap, {
+    const frame = new VideoFrame(canvas, {
       timestamp: i * frameDuration,
       duration: frameDuration,
     })
@@ -147,10 +150,10 @@ export async function exportMP4(
     const keyFrame = i % (options.fps * 2) === 0
     encoder.encode(frame, { keyFrame })
     frame.close()
-    bitmap.close()
 
     // Throttle encoding queue
     while (encoder.encodeQueueSize > 5) {
+      if (encoder.state === 'closed') break
       await new Promise(r => setTimeout(r, 1))
     }
 
@@ -202,9 +205,10 @@ export async function exportVideoMP4(
     codec = 'avc1.42001f'
   }
 
+  let encoderError: DOMException | Error | null = null
   const encoder = new VideoEncoder({
     output: (chunk, meta) => muxer.addVideoChunk(chunk, meta ?? undefined),
-    error: (e) => console.error('VideoEncoder error:', e),
+    error: (e) => { encoderError = e },
   })
 
   encoder.configure({
@@ -218,6 +222,10 @@ export async function exportVideoMP4(
   video.pause()
 
   for (let i = 0; i < totalFrames; i++) {
+    if (encoder.state === 'closed') {
+      throw encoderError || new Error('VideoEncoder closed unexpectedly')
+    }
+
     const targetTime = (i / totalFrames) * duration
     video.currentTime = targetTime
     await new Promise<void>(r => {
@@ -226,8 +234,7 @@ export async function exportVideoMP4(
 
     renderCurrentFrame()
 
-    const bitmap = await createImageBitmap(canvas)
-    const frame = new VideoFrame(bitmap, {
+    const frame = new VideoFrame(canvas, {
       timestamp: i * frameDuration,
       duration: frameDuration,
     })
@@ -235,9 +242,9 @@ export async function exportVideoMP4(
     const keyFrame = i % (options.fps * 2) === 0
     encoder.encode(frame, { keyFrame })
     frame.close()
-    bitmap.close()
 
     while (encoder.encodeQueueSize > 5) {
+      if (encoder.state === 'closed') break
       await new Promise(r => setTimeout(r, 1))
     }
 

@@ -166,8 +166,8 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
   const canExportMP4 = canExportAnim && typeof VideoEncoder !== 'undefined'
 
   const tabs: { id: EffectType; label: string }[] = [
-    { id: 'glitch', label: t2('glitch') },
     { id: 'ascii', label: t2('ascii') },
+    { id: 'glitch', label: t2('glitch') },
     { id: 'other', label: t2('other') },
   ]
   const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -222,27 +222,34 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
   }, [onFile])
 
   const makeRenderFrame = useCallback(() => {
-    const canvas = canvasRef?.current
-    if (!canvas) return null
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return null
-
     const source = state.video || state.image
     if (!source) return null
 
-    const { width, height } = getDisplaySize(source)
+    const { width: rawW, height: rawH } = getDisplaySize(source)
+    // Ensure even dimensions for H.264 encoder compatibility
+    const width = rawW % 2 === 0 ? rawW : rawW + 1
+    const height = rawH % 2 === 0 ? rawH : rawH + 1
 
-    return (frameIndex: number) => {
+    // Use offscreen canvas to avoid conflicts with the animation loop on the display canvas
+    const offscreen = document.createElement('canvas')
+    offscreen.width = width
+    offscreen.height = height
+    const offCtx = offscreen.getContext('2d', { alpha: false })
+    if (!offCtx) return null
+
+    const renderFrame = (frameIndex: number) => {
       if (state.activeEffect === 'glitch') {
-        renderGlitch(ctx, source, state.glitchParams, width, height, frameIndex)
+        renderGlitch(offCtx, source, state.glitchParams, width, height, frameIndex)
       } else if (state.activeEffect === 'ascii') {
-        renderAscii(ctx, source, state.asciiParams, width, height, frameIndex)
+        renderAscii(offCtx, source, state.asciiParams, width, height, frameIndex)
       } else {
-        ctx.clearRect(0, 0, width, height)
-        ctx.drawImage(source, 0, 0, width, height)
+        offCtx.clearRect(0, 0, width, height)
+        offCtx.drawImage(source, 0, 0, width, height)
       }
     }
-  }, [canvasRef, state])
+
+    return { canvas: offscreen, renderFrame }
+  }, [state])
 
   const doExport = useCallback(async (fmt: ExportFormat) => {
     if (!canvasRef?.current || !hasSource) return
@@ -260,10 +267,10 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
         case 'SVG': await exportSVG(canvas, filename); break
         case 'PDF': await exportPDF(canvas, filename); break
         case 'GIF': {
-          const renderFrame = makeRenderFrame()
-          if (!renderFrame) break
+          const result = makeRenderFrame()
+          if (!result) break
           const totalFrames = Math.round(animDuration * animFps)
-          await exportGIF(canvas, renderFrame, {
+          await exportGIF(result.canvas, result.renderFrame, {
             frames: totalFrames,
             delay: Math.round(1000 / animFps),
             filename,
@@ -272,17 +279,17 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
         }
         case 'MP4': {
           if (hasVideo && state.video) {
-            const renderFrame = makeRenderFrame()
-            if (!renderFrame) break
-            await exportVideoMP4(canvas, state.video, () => renderFrame(0), {
+            const result = makeRenderFrame()
+            if (!result) break
+            await exportVideoMP4(result.canvas, state.video, () => result.renderFrame(0), {
               fps: animFps,
               filename,
               onProgress: setExportProgress,
             })
           } else {
-            const renderFrame = makeRenderFrame()
-            if (!renderFrame) break
-            await exportMP4(canvas, renderFrame, {
+            const result = makeRenderFrame()
+            if (!result) break
+            await exportMP4(result.canvas, result.renderFrame, {
               duration: animDuration,
               fps: animFps,
               filename,
