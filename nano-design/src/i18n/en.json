@@ -4,8 +4,8 @@
     "description": "Image Art Effect Generator"
   },
   "effects": {
-    "glitch": "Glitch Art",
-    "ascii": "ASCII Art",
+    "glitch": "Glitch",
+    "ascii": "ASCII",
     "other": "Other"
   },
   "upload": {
@@ -110,5 +110,28 @@
   },
   "settings": {
     "language": "Language"
+  },
+  "nav": {
+    "about": "About",
+    "saved": "Saved"
+  },
+  "saved": {
+    "title": "Saved Designs",
+    "empty": "No saved designs yet.\nPress S to save the current design.",
+    "emptyFilter": "No designs for this filter.",
+    "deleteConfirm": "Delete",
+    "justNow": "just now",
+    "minutesAgo": "{n}m ago",
+    "hoursAgo": "{n}h ago",
+    "daysAgo": "{n}d ago",
+    "statusSaved": "Saved!",
+    "statusDuplicate": "Already saved",
+    "saveButton": "Save"
+  },
+  "about": {
+    "title": "Nano Design",
+    "description": "A collection of image art effect tools. Each effect produces unique visual outputs using algorithms and creative coding techniques.",
+    "stack": "Stack",
+    "version": "Version"
   }
 }

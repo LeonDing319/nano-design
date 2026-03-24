@@ -65,6 +65,7 @@ export interface AppState {
   asciiParams: AsciiParams
   locale: 'zh' | 'en'
   theme: 'dark'
+  showAbout: boolean
 }
 
 export interface Preset<T> {

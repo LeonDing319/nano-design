@@ -37,8 +37,8 @@ export function Sidebar({ canvasRef }: SidebarProps) {
   }
 
   return (
-    <aside className="w-80 h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-secondary)', borderLeft: '1px solid var(--color-border-faint)' }}>
-      <div className="flex-shrink-0 p-4 pb-2 space-y-2.5" style={{ borderBottom: '1px solid var(--color-border-faint)' }}>
+    <aside className="w-80 h-full flex flex-col" style={{ backgroundColor: 'var(--color-sidebar)', borderLeft: '1px solid var(--color-border-faint)' }}>
+      <div className="flex-shrink-0 pt-3 px-4 pb-2 space-y-2.5" style={{ borderBottom: '1px solid var(--color-border-faint)' }}>
         <ImageUploader hasImage={hasImage} canvasRef={canvasRef} />
 
         {state.video && (

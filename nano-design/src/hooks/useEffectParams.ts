@@ -15,6 +15,7 @@ type Action =
   | { type: 'SET_GLITCH_PRESET'; payload: GlitchParams }
   | { type: 'SET_ASCII_PRESET'; payload: AsciiParams }
   | { type: 'SET_LOCALE'; payload: 'zh' | 'en' }
+  | { type: 'SET_SHOW_ABOUT'; payload: boolean }
 
 export const DEFAULT_VIDEO_PLAYBACK: VideoPlaybackState = {
   playing: false,
@@ -33,6 +34,7 @@ export const initialAppState: AppState = {
   asciiParams: DEFAULT_ASCII_PARAMS,
   locale: 'en',
   theme: 'dark',
+  showAbout: false,
 }
 
 export function appReducer(state: AppState, action: Action): AppState {
@@ -55,6 +57,8 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, asciiParams: action.payload }
     case 'SET_LOCALE':
       return { ...state, locale: action.payload }
+    case 'SET_SHOW_ABOUT':
+      return { ...state, showAbout: action.payload }
     default:
       return state
   }

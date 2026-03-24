@@ -110,5 +110,28 @@
   },
   "settings": {
     "language": "语言"
+  },
+  "nav": {
+    "about": "关于",
+    "saved": "收藏"
+  },
+  "saved": {
+    "title": "已保存设计",
+    "empty": "还没有保存的设计\n按 S 键保存当前设计",
+    "emptyFilter": "该效果没有保存的设计",
+    "deleteConfirm": "删除",
+    "justNow": "刚刚",
+    "minutesAgo": "{n}分钟前",
+    "hoursAgo": "{n}小时前",
+    "daysAgo": "{n}天前",
+    "statusSaved": "已保存!",
+    "statusDuplicate": "已存在",
+    "saveButton": "保存"
+  },
+  "about": {
+    "title": "Nano Design",
+    "description": "一套图像艺术效果工具集，每种效果通过算法与创意编程技术生成独特的视觉输出。",
+    "stack": "技术栈",
+    "version": "版本"
   }
 }

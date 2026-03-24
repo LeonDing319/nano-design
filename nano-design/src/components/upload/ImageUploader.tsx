@@ -1,14 +1,13 @@
 'use client'
 
 import { useCallback, useRef, useState, useEffect } from 'react'
-import { ImageIcon, Download, Settings } from 'lucide-react'
+import { ImageIcon, Download } from 'lucide-react'
 import { useImageUpload, ACCEPT_STRING } from '@/hooks/useImageUpload'
 import { useTranslations } from 'next-intl'
 import { exportPNG, exportJPEG, exportSVG, exportPDF, exportGIF, exportMP4, exportVideoMP4 } from '@/engines/exporter'
 import { renderGlitch } from '@/engines/glitch'
 import { renderAscii } from '@/engines/ascii'
 import { useAppState } from '@/hooks/useEffectParams'
-import { EffectType } from '@/types'
 import { playSound } from '@/utils/sound'
 import { getDisplaySize } from '@/components/canvas/EffectCanvas'
 
@@ -27,7 +26,6 @@ interface ImageUploaderProps {
 export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
   const { handleUpload } = useImageUpload()
   const { state, dispatch } = useAppState()
-  const t2 = useTranslations('effects')
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -164,22 +162,6 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
   const hasVideo = !!state.video
   const canExportAnim = isAnimating || hasVideo
   const canExportMP4 = canExportAnim && typeof VideoEncoder !== 'undefined'
-
-  const tabs: { id: EffectType; label: string }[] = [
-    { id: 'ascii', label: t2('ascii') },
-    { id: 'glitch', label: t2('glitch') },
-    { id: 'other', label: t2('other') },
-  ]
-  const tabBtnRefs = useRef<(HTMLButtonElement | null)[]>([])
-  const [tabIndicator, setTabIndicator] = useState({ left: 2, width: 0 })
-
-  useEffect(() => {
-    const idx = tabs.findIndex(tab => tab.id === state.activeEffect)
-    const btn = tabBtnRefs.current[idx]
-    if (btn) {
-      setTabIndicator({ left: btn.offsetLeft, width: btn.offsetWidth })
-    }
-  }, [state.activeEffect, state.locale])
 
   const onFile = useCallback(async (file: File) => {
     setError(null)
@@ -380,119 +362,34 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
             borderRadius: '8px',
           }}
         />
-        <button
-          type="button"
-          onClick={() => dispatch({ type: 'SET_LOCALE', payload: state.locale === 'en' ? 'zh' : 'en' })}
-          style={{
-            position: 'absolute',
-            top: 6,
-            right: 6,
-            zIndex: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 32,
-            height: 32,
-            borderRadius: '50%',
-            border: '1px solid rgba(255,255,255,0.12)',
-            backgroundColor: 'rgba(255,255,255,0.08)',
-            color: 'rgba(255,255,255,0.7)',
-            cursor: 'pointer',
-            transition: 'color 0.2s, background-color 0.2s, box-shadow 0.2s',
-            backdropFilter: 'blur(16px) saturate(1.4)',
-            WebkitBackdropFilter: 'blur(16px) saturate(1.4)',
-            boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.2), 0 1px 3px rgba(0,0,0,0.2)',
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.85)'
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.14)'
-            e.currentTarget.style.boxShadow = 'inset 0 0.5px 0 rgba(255,255,255,0.3), 0 2px 6px rgba(0,0,0,0.25)'
-            triggerRipple(e.currentTarget)
-            playSound('Bottle')
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
-            e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'
-            e.currentTarget.style.boxShadow = 'inset 0 0.5px 0 rgba(255,255,255,0.2), 0 1px 3px rgba(0,0,0,0.2)'
-          }}
-        >
-          <Settings style={{ width: 15, height: 15 }} />
-        </button>
       </div>
-
-      {/* Effect tabs */}
-      <nav style={{
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2,
-        backgroundColor: 'var(--color-bg-elevated)',
-        borderRadius: 8,
-        padding: 2,
-        border: '1px solid var(--color-border-group)',
-      }}>
-        <div style={{
-          position: 'absolute',
-          top: 2,
-          left: tabIndicator.left,
-          width: tabIndicator.width,
-          height: 'calc(100% - 4px)',
-          borderRadius: 6,
-          backgroundColor: 'var(--color-tab-indicator)',
-          boxShadow: 'var(--color-tab-indicator-shadow)',
-          transition: 'left 0.2s cubic-bezier(0.4, 0, 0.2, 1), width 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          pointerEvents: 'none',
-        }} />
-        {tabs.map((tab, i) => (
-          <button
-            key={tab.id}
-            ref={el => { tabBtnRefs.current[i] = el }}
-            onClick={() => { dispatch({ type: 'SET_EFFECT', payload: tab.id }); playSound('Frog') }}
-            style={{
-              flex: 1,
-              position: 'relative',
-              zIndex: 1,
-              padding: '6px 0',
-              fontSize: 14,
-              borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              backgroundColor: 'transparent',
-              color: state.activeEffect === tab.id ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
-              transition: 'color 0.2s',
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {/* Upload button */}
         <button
           onClick={onClickUpload}
           style={{
-            height: 36,
+            height: 32,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px',
             padding: '0 12px',
-            fontSize: '14px',
+            fontSize: '12px',
+            fontWeight: 500,
             whiteSpace: 'nowrap',
             overflow: 'hidden',
-            color: 'var(--color-text-secondary)',
-            backgroundColor: 'var(--color-bg-elevated)',
-            border: '1px solid var(--color-border-group)',
-            borderRadius: '8px',
+            color: 'var(--color-text-primary)',
+            backgroundColor: 'transparent',
+            border: '1px solid var(--color-border)',
+            borderRadius: '6px',
             cursor: 'pointer',
-            transition: 'background-color 0.15s, border-color 0.15s',
+            transition: 'border-color 0.15s',
           }}
-          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)')}
-          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated)')}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
         >
-          <ImageIcon style={{ width: 16, height: 16, flexShrink: 0 }} />
+          <ImageIcon style={{ width: 14, height: 14, flexShrink: 0 }} />
           <span>{t('title')}</span>
         </button>
 
@@ -503,25 +400,26 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
             disabled={!hasSource || exporting}
             style={{
               width: '100%',
-              height: 36,
+              height: 32,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
               padding: '0 12px',
-              fontSize: '14px',
-              color: 'var(--color-text-secondary)',
-              backgroundColor: 'var(--color-bg-elevated)',
-              border: '1px solid var(--color-border-group)',
-              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 500,
+              color: 'var(--color-text-primary)',
+              backgroundColor: 'transparent',
+              border: '1px solid var(--color-border)',
+              borderRadius: '6px',
               cursor: !hasSource || exporting ? 'not-allowed' : 'pointer',
               opacity: !hasSource || exporting ? 0.4 : 1,
-              transition: 'background-color 0.15s, border-color 0.15s',
+              transition: 'border-color 0.15s',
             }}
-            onMouseEnter={e => { if (hasSource) e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)' }}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--color-bg-elevated)')}
+            onMouseEnter={e => { if (hasSource) e.currentTarget.style.borderColor = 'var(--color-border-group)' }}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
           >
-            <Download style={{ width: 16, height: 16, flexShrink: 0 }} />
+            <Download style={{ width: 14, height: 14, flexShrink: 0 }} />
             <span>{exporting ? tExport('processing') : tExport('button')}</span>
           </button>
 

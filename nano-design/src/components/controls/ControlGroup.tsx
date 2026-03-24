@@ -12,7 +12,7 @@ export function ControlGroup({ children, title, suffix }: ControlGroupProps) {
   return (
     <div
       style={{
-        border: '1px solid var(--color-border-group)',
+        border: '1px solid var(--color-border)',
         borderRadius: 10,
         padding: '12px',
       }}
