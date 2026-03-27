@@ -12,7 +12,7 @@ const ZOOM_MAX = 20
 const ZOOM_SENSITIVITY = 0.02
 const PAN_SPEED = 1.7
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/mpeg']
 
 interface InfiniteCanvasProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>
@@ -119,6 +119,27 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
       })
     }
   }, [source, isMarble])
+
+  // 监听预设 zoom 设置
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const zoom = (e as CustomEvent).detail as number
+      if (!containerRef.current) return
+      const rect = containerRef.current.getBoundingClientRect()
+      const { width: dw, height: dh } = imageSizeRef.current
+      if (dw === 0) return
+      const scaledW = dw * zoom
+      const scaledH = dh * zoom
+      setNodePos({ x: 0, y: 0 })
+      setViewport({
+        x: (rect.width - scaledW) / 2,
+        y: (rect.height - scaledH) / 2,
+        zoom,
+      })
+    }
+    window.addEventListener('nano:set-zoom', handler)
+    return () => window.removeEventListener('nano:set-zoom', handler)
+  }, [])
 
   useEffect(() => {
     const el = containerRef.current
@@ -258,7 +279,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
     e.stopPropagation()
     setIsFileDragOver(false)
     const file = e.dataTransfer.files[0]
-    if (file && ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+    if (file && ACCEPTED_TYPES.includes(file.type)) {
       await handleUpload(file)
     }
   }, [handleUpload])
@@ -314,7 +335,16 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
       )}
 
       {hasContent && (
-        <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 50 }}>
+        <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 50, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            fontSize: 11,
+            fontWeight: 500,
+            color: 'rgba(255,255,255,0.5)',
+            fontVariantNumeric: 'tabular-nums',
+            userSelect: 'none',
+          }}>
+            {Math.round(viewport.zoom * 100)}%
+          </span>
           <button
             type="button"
             onClick={() => {

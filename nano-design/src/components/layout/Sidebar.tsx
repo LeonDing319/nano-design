@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAppState } from '@/hooks/useEffectParams'
 import { ImageUploader } from '@/components/upload/ImageUploader'
 import { Slider } from '@/components/controls/Slider'
@@ -10,7 +10,7 @@ import { GLITCH_PRESETS, DEFAULT_GLITCH_PARAMS, randomizeGlitchParams } from '@/
 import { DEFAULT_ASCII_PARAMS, randomizeAsciiParams } from '@/presets/ascii-presets'
 import { DEFAULT_MARBLE_PARAMS, randomizeMarbleParams, randomizeMarbleColors } from '@/presets/marble-presets'
 import { GlitchParams, AsciiParams, MarbleParams } from '@/types'
-import { getRandomPreset } from '@/presets/showcase-presets'
+import { getRandomPreset, getNextPreset, getRandomShowcasePreset, ShowcasePreset } from '@/presets/showcase-presets'
 import { ButtonGroup } from '@/components/controls/ButtonGroup'
 import { useTranslations } from 'next-intl'
 import { ControlGroup, SectionLabel } from '@/components/controls/ControlGroup'
@@ -47,30 +47,114 @@ export function Sidebar({ canvasRef }: SidebarProps) {
   const tActions = useTranslations('actions')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'duplicate'>('idle')
   const [lastPresetId, setLastPresetId] = useState<string | undefined>()
+  const initialLoaded = useRef(false)
+  const showcaseSourceEffect = useRef<EffectType | null>(null)
 
-  const handleInspire = useCallback(() => {
-    const effect = state.activeEffect
-    const userHasImage = !!state.image || !!state.video
+  const currentVideoRef = useRef(state.video)
+  currentVideoRef.current = state.video
 
-    // 无用户图片且非液态：尝试加载预设
-    if (!userHasImage && effect !== 'marble') {
-      const preset = getRandomPreset(effect, lastPresetId)
-      if (preset) {
-        setLastPresetId(preset.id)
-        const img = new window.Image()
-        img.onload = () => {
-          dispatch({ type: 'SET_IMAGE', payload: img })
-          if (preset.asciiParams) dispatch({ type: 'SET_ASCII_PRESET', payload: preset.asciiParams })
-          if (preset.glitchParams) dispatch({ type: 'SET_GLITCH_PRESET', payload: preset.glitchParams })
-          if (preset.marbleParams) dispatch({ type: 'SET_MARBLE_PRESET', payload: preset.marbleParams })
-        }
-        img.src = preset.image
-        playSound('BubblePop')
-        return
+  const loadShowcasePreset = useCallback((preset: ShowcasePreset) => {
+    showcaseSourceEffect.current = preset.effect
+
+    // 清理旧视频
+    const oldVideo = currentVideoRef.current
+    if (oldVideo) {
+      oldVideo.pause()
+      oldVideo.removeAttribute('src')
+      oldVideo.load()
+    }
+
+    const applyParams = () => {
+      if (preset.effect) dispatch({ type: 'SET_EFFECT', payload: preset.effect })
+      if (preset.asciiParams) dispatch({ type: 'SET_ASCII_PRESET', payload: preset.asciiParams })
+      if (preset.glitchParams) dispatch({ type: 'SET_GLITCH_PRESET', payload: preset.glitchParams })
+      if (preset.marbleParams) dispatch({ type: 'SET_MARBLE_PRESET', payload: preset.marbleParams })
+      if (preset.zoom) {
+        // 延迟发送，确保在 InfiniteCanvas 的 fitZoom 之后生效
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('nano:set-zoom', { detail: preset.zoom }))
+        }, 100)
       }
     }
 
-    // 有图片 或 液态 或 无预设：随机参数
+    if (preset.video) {
+      const video = document.createElement('video')
+      video.preload = 'auto'
+      video.muted = true
+      video.playsInline = true
+      video.loop = true
+      video.onloadeddata = () => {
+        video.play()
+        dispatch({ type: 'SET_VIDEO', payload: video })
+        // SET_VIDEO 会重置参数，所以在下一帧恢复
+        requestAnimationFrame(applyParams)
+      }
+      video.src = preset.video
+    } else if (preset.image) {
+      const img = new window.Image()
+      img.onload = () => {
+        dispatch({ type: 'SET_IMAGE', payload: img })
+        requestAnimationFrame(applyParams)
+      }
+      img.src = preset.image
+    }
+  }, [dispatch])
+
+  // 初始加载：随机展示一个预设
+  // 初始加载：随机展示一个预设
+  useEffect(() => {
+    if (initialLoaded.current) return
+    initialLoaded.current = true
+    const preset = getRandomShowcasePreset()
+    if (preset) {
+      setLastPresetId(preset.id)
+      loadShowcasePreset(preset)
+    }
+  }, [loadShowcasePreset])
+
+  // 用户上传素材时清除预设标记
+  useEffect(() => {
+    const handler = () => { showcaseSourceEffect.current = null }
+    window.addEventListener('nano:user-upload', handler)
+    return () => window.removeEventListener('nano:user-upload', handler)
+  }, [])
+
+  // 切换效果时：预设素材只属于对应效果，切走时清除或加载目标效果预设
+  const prevEffect = useRef(state.activeEffect)
+  useEffect(() => {
+    if (prevEffect.current === state.activeEffect) return
+    prevEffect.current = state.activeEffect
+    if (!showcaseSourceEffect.current) return // 用户自己上传的素材，保留
+    if (showcaseSourceEffect.current === state.activeEffect) return // 切回同一效果
+
+    // 清除旧预设素材
+    if (state.video) state.video.pause()
+
+    // 尝试加载目标效果的预设
+    const preset = getRandomPreset(state.activeEffect)
+    if (preset) {
+      setLastPresetId(preset.id)
+      loadShowcasePreset(preset)
+    } else {
+      showcaseSourceEffect.current = null
+      dispatch({ type: 'SET_VIDEO', payload: null })
+    }
+  }, [state.activeEffect, state.video, dispatch, loadShowcasePreset])
+
+  // 灵感：按顺序切换到下一个预设素材
+  const handleInspire = useCallback(() => {
+    const effect = state.activeEffect
+    const preset = getNextPreset(effect, lastPresetId)
+    if (preset) {
+      setLastPresetId(preset.id)
+      loadShowcasePreset(preset)
+    }
+    playSound('BubblePop')
+  }, [state.activeEffect, lastPresetId, loadShowcasePreset])
+
+  // 随机：在当前素材上随机生成参数
+  const handleRandomize = useCallback(() => {
+    const effect = state.activeEffect
     if (effect === 'marble') {
       dispatch({ type: 'SET_MARBLE_PRESET', payload: randomizeMarbleParams() })
     } else if (effect === 'ascii') {
@@ -78,8 +162,9 @@ export function Sidebar({ canvasRef }: SidebarProps) {
     } else if (effect === 'glitch') {
       dispatch({ type: 'SET_GLITCH_PRESET', payload: randomizeGlitchParams() })
     }
+    setActivePresetId('')
     playSound('BubblePop')
-  }, [state.activeEffect, state.image, state.video, lastPresetId, dispatch])
+  }, [state.activeEffect, dispatch])
 
   const handleReset = useCallback(() => {
     const effect = state.activeEffect
@@ -144,14 +229,14 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               disabled={disabled}
             />
 
-            <ControlGroup>
+            <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Layers style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('sectionRgb')}</span>}>
               <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Layers style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('rgbSplit')}</span>}
+                label={t('rgbSplit')}
                 value={state.glitchParams.rgbSplit} min={0} max={25} onChange={(v) => setGlitch('rgbSplit', v)} disabled={disabled}
                 sound="mech5"
               />
               <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Move style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('rgbSplitDirection')}</span>}
+                label={t('rgbSplitDirection')}
                 value={state.glitchParams.rgbSplitDirection} min={0} max={360} onChange={(v) => setGlitch('rgbSplitDirection', v)}
                 disabled={disabled || state.glitchParams.rgbSplit === 0 || state.glitchParams.rgbSplitDirectionAnim}
                 sound="mech5"
@@ -172,34 +257,34 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               />
             </ControlGroup>
 
-            <ControlGroup>
+            <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shuffle style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('sectionMotion')}</span>}>
               <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shuffle style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('displacement')}</span>}
+                label={t('displacement')}
                 value={state.glitchParams.displacement} min={0} max={20} onChange={(v) => setGlitch('displacement', v)} disabled={disabled}
                 sound="mech5"
               />
               <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><AlignJustify style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('stripeDensity')}</span>}
+                label={t('stripeDensity')}
                 value={state.glitchParams.stripeDensity} min={0} max={50} onChange={(v) => setGlitch('stripeDensity', v)} disabled={disabled}
                 sound="mech5"
               />
               <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><ArrowDownUp style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('verticalSpeed')}</span>}
+                label={t('verticalSpeed')}
                 value={state.glitchParams.verticalSpeed} min={0} max={20} onChange={(v) => setGlitch('verticalSpeed', v)} disabled={disabled}
                 sound="mech5"
               />
             </ControlGroup>
 
-            <ControlGroup>
+            <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Grid style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('sectionDots')}</span>}>
               <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Move style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('dotSize')}</span>}
+                label={t('dotSize')}
                 value={state.glitchParams.dotSize} min={0} max={6} step={0.1}
                 onChange={(v) => setGlitch('dotSize', v)}
                 disabled={disabled}
                 sound="mech5"
               />
               <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Palette style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('dotOpacity')}</span>}
+                label={t('dotOpacity')}
                 value={state.glitchParams.dotOpacity} min={0} max={0.7} step={0.01}
                 onChange={(v) => setGlitch('dotOpacity', v)}
                 disabled={disabled || state.glitchParams.dotSize <= 0}
@@ -207,16 +292,16 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               />
             </ControlGroup>
 
-            <ControlGroup>
+            <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Waves style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('sectionDamage')}</span>}>
               <Slider
-                label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shuffle style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('corruption')}</span>}
+                label={t('corruption')}
                 value={state.glitchParams.corruption} min={0} max={100}
                 onChange={(v) => setGlitch('corruption', v)}
                 disabled={disabled}
                 sound="mech5"
               />
               <div className="flex items-center justify-between">
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--color-text-secondary)' }}><AlignJustify style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('scanlines')}</span>
+                <SectionLabel>{t('scanlines')}</SectionLabel>
                 <Toggle
                   checked={state.glitchParams.scanlines}
                   onChange={(v) => { setGlitch('scanlines', v); playSound('BubblePop') }}
@@ -265,65 +350,53 @@ export function Sidebar({ canvasRef }: SidebarProps) {
                   ) : undefined}
                 />
               </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('sectionSize')}</SectionLabel>
-                <Slider
-                  value={state.asciiParams.fontSize} min={6} max={28} step={2}
-                  onChange={(v) => setAscii('fontSize', v)}
-                  disabled={disabled}
-                  sound="mech5"
-                  snapTo={8}
-                />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('sectionCoverage')}</SectionLabel>
-                <Slider
-                  value={state.asciiParams.coverage} min={10} max={100}
-                  onChange={(v) => setAscii('coverage', v)}
-                  disabled={disabled}
-                  sound="mech5"
-                />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('sectionEdgeEmphasis')}</SectionLabel>
-                <Slider
-                  value={state.asciiParams.edgeEmphasis} min={0} max={100}
-                  onChange={(v) => setAscii('edgeEmphasis', v)}
-                  disabled={disabled}
-                  sound="mech5"
-                  snapTo={100}
-                />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('sectionCharOpacity')}</SectionLabel>
-                <Slider
-                  value={state.asciiParams.charOpacity} min={10} max={100}
-                  onChange={(v) => setAscii('charOpacity', v)}
-                  disabled={disabled}
-                  sound="mech5"
-                  snapTo={55}
-                />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('sectionCharBrightness')}</SectionLabel>
-                <Slider
-                  value={state.asciiParams.charBrightness} min={-100} max={100}
-                  onChange={(v) => setAscii('charBrightness', v)}
-                  disabled={disabled}
-                  sound="mech5"
-                  snapTo={0}
-                />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('sectionCharContrast')}</SectionLabel>
-                <Slider
-                  value={state.asciiParams.charContrast} min={-100} max={100}
-                  onChange={(v) => setAscii('charContrast', v)}
-                  disabled={disabled}
-                  sound="mech5"
-                  snapTo={0}
-                />
-              </div>
+              <Slider
+                label={t('sectionSize')}
+                value={state.asciiParams.fontSize} min={6} max={28} step={2}
+                onChange={(v) => setAscii('fontSize', v)}
+                disabled={disabled}
+                sound="mech5"
+                snapTo={8}
+              />
+              <Slider
+                label={t('sectionCoverage')}
+                value={state.asciiParams.coverage} min={10} max={100}
+                onChange={(v) => setAscii('coverage', v)}
+                disabled={disabled}
+                sound="mech5"
+              />
+              <Slider
+                label={t('sectionEdgeEmphasis')}
+                value={state.asciiParams.edgeEmphasis} min={0} max={100}
+                onChange={(v) => setAscii('edgeEmphasis', v)}
+                disabled={disabled}
+                sound="mech5"
+                snapTo={100}
+              />
+              <Slider
+                label={t('sectionCharOpacity')}
+                value={state.asciiParams.charOpacity} min={10} max={100}
+                onChange={(v) => setAscii('charOpacity', v)}
+                disabled={disabled}
+                sound="mech5"
+                snapTo={55}
+              />
+              <Slider
+                label={t('sectionCharBrightness')}
+                value={state.asciiParams.charBrightness} min={-100} max={100}
+                onChange={(v) => setAscii('charBrightness', v)}
+                disabled={disabled}
+                sound="mech5"
+                snapTo={0}
+              />
+              <Slider
+                label={t('sectionCharContrast')}
+                value={state.asciiParams.charContrast} min={-100} max={100}
+                onChange={(v) => setAscii('charContrast', v)}
+                disabled={disabled}
+                sound="mech5"
+                snapTo={0}
+              />
               <div className="flex items-center justify-between">
                 <SectionLabel>{t('sectionInvert')}</SectionLabel>
                 <Toggle
@@ -343,25 +416,21 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             </ControlGroup>
 
             <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Image style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('sectionBackground')}</span>}>
-              <div className="space-y-1">
-                <SectionLabel>{t('sectionBlur')}</SectionLabel>
-                <Slider
-                  value={state.asciiParams.bgBlur} min={0} max={80}
-                  onChange={(v) => setAscii('bgBlur', v)}
-                  disabled={disabled}
-                  sound="mech5"
-                  snapTo={14}
-                />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('sectionOpacity')}</SectionLabel>
-                <Slider
-                  value={state.asciiParams.bgOpacity} min={0} max={100}
-                  onChange={(v) => setAscii('bgOpacity', v)}
-                  disabled={disabled}
-                  sound="mech5"
-                />
-              </div>
+              <Slider
+                label={t('sectionBlur')}
+                value={state.asciiParams.bgBlur} min={0} max={80}
+                onChange={(v) => setAscii('bgBlur', v)}
+                disabled={disabled}
+                sound="mech5"
+                snapTo={14}
+              />
+              <Slider
+                label={t('sectionOpacity')}
+                value={state.asciiParams.bgOpacity} min={0} max={100}
+                onChange={(v) => setAscii('bgOpacity', v)}
+                disabled={disabled}
+                sound="mech5"
+              />
               <div className="flex items-center justify-between">
                 <SectionLabel>{t('sectionColor')}</SectionLabel>
                 <input
@@ -381,48 +450,40 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             >
               {state.asciiParams.animated && (
                 <>
-                  <div className="space-y-1">
-                    <SectionLabel>{t('sectionAnimSpeed')}</SectionLabel>
-                    <Slider
-                      value={state.asciiParams.animSpeed} min={0.2} max={5} step={0.1}
-                      onChange={(v) => setAscii('animSpeed', v)}
-                      disabled={disabled}
-                      sound="mech5"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <SectionLabel>{t('sectionAnimIntensity')}</SectionLabel>
-                    <Slider
-                      value={state.asciiParams.animIntensity} min={10} max={100}
-                      onChange={(v) => setAscii('animIntensity', v)}
-                      disabled={disabled}
-                      sound="mech5"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <SectionLabel>{t('sectionAnimRandomness')}</SectionLabel>
-                    <Slider
-                      value={state.asciiParams.animRandomness} min={0} max={100}
-                      onChange={(v) => setAscii('animRandomness', v)}
-                      disabled={disabled}
-                      sound="mech5"
-                    />
-                  </div>
+                  <Slider
+                    label={t('sectionAnimSpeed')}
+                    value={state.asciiParams.animSpeed} min={0.2} max={5} step={0.1}
+                    onChange={(v) => setAscii('animSpeed', v)}
+                    disabled={disabled}
+                    sound="mech5"
+                  />
+                  <Slider
+                    label={t('sectionAnimIntensity')}
+                    value={state.asciiParams.animIntensity} min={10} max={100}
+                    onChange={(v) => setAscii('animIntensity', v)}
+                    disabled={disabled}
+                    sound="mech5"
+                  />
+                  <Slider
+                    label={t('sectionAnimRandomness')}
+                    value={state.asciiParams.animRandomness} min={0} max={100}
+                    onChange={(v) => setAscii('animRandomness', v)}
+                    disabled={disabled}
+                    sound="mech5"
+                  />
                 </>
               )}
             </ControlGroup>
 
             <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Palette style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('sectionColorTint')}</span>}>
-              <div className="space-y-1">
-                <SectionLabel>{t('sectionColorTintOpacity')}</SectionLabel>
-                <Slider
-                  value={state.asciiParams.colorTintOpacity} min={0} max={100}
-                  onChange={(v) => setAscii('colorTintOpacity', v)}
-                  disabled={disabled}
-                  sound="mech5"
-                  snapTo={0}
-                />
-              </div>
+              <Slider
+                label={t('sectionColorTintOpacity')}
+                value={state.asciiParams.colorTintOpacity} min={0} max={100}
+                onChange={(v) => setAscii('colorTintOpacity', v)}
+                disabled={disabled}
+                sound="mech5"
+                snapTo={0}
+              />
               <div className="space-y-1">
                 <SectionLabel>{t('sectionColorTintBlend')}</SectionLabel>
                 <ButtonGroup
@@ -491,37 +552,16 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             </ControlGroup>
 
             <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Waves style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('marble.sectionShape')}</span>}>
-              <div className="space-y-1">
-                <SectionLabel>{t('marble.noiseScale')}</SectionLabel>
-                <Slider value={state.marbleParams.noiseScale} min={0.5} max={3} step={0.05} onChange={(v) => setMarble('noiseScale', v)} sound="mech5" />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('marble.warpPower')}</SectionLabel>
-                <Slider value={state.marbleParams.warpPower} min={0} max={1} step={0.01} onChange={(v) => setMarble('warpPower', v)} sound="mech5" />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('marble.fbmStrength')}</SectionLabel>
-                <Slider value={state.marbleParams.fbmStrength} min={0.1} max={3} step={0.05} onChange={(v) => setMarble('fbmStrength', v)} sound="mech5" />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('marble.fbmDamping')}</SectionLabel>
-                <Slider value={state.marbleParams.fbmDamping} min={0.1} max={1} step={0.05} onChange={(v) => setMarble('fbmDamping', v)} sound="mech5" />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('marble.blurRadius')}</SectionLabel>
-                <Slider value={state.marbleParams.blurRadius} min={0.1} max={3} step={0.05} onChange={(v) => setMarble('blurRadius', v)} sound="mech5" />
-              </div>
+              <Slider label={t('marble.noiseScale')} value={state.marbleParams.noiseScale} min={0.5} max={3} step={0.05} onChange={(v) => setMarble('noiseScale', v)} sound="mech5" />
+              <Slider label={t('marble.warpPower')} value={state.marbleParams.warpPower} min={0} max={1} step={0.01} onChange={(v) => setMarble('warpPower', v)} sound="mech5" />
+              <Slider label={t('marble.fbmStrength')} value={state.marbleParams.fbmStrength} min={0.1} max={3} step={0.05} onChange={(v) => setMarble('fbmStrength', v)} sound="mech5" />
+              <Slider label={t('marble.fbmDamping')} value={state.marbleParams.fbmDamping} min={0.1} max={1} step={0.05} onChange={(v) => setMarble('fbmDamping', v)} sound="mech5" />
+              <Slider label={t('marble.blurRadius')} value={state.marbleParams.blurRadius} min={0.1} max={3} step={0.05} onChange={(v) => setMarble('blurRadius', v)} sound="mech5" />
             </ControlGroup>
 
             <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Layers style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('marble.sectionVein')}</span>}>
-              <div className="space-y-1">
-                <SectionLabel>{t('marble.veinIntensity')}</SectionLabel>
-                <Slider value={state.marbleParams.veinIntensity} min={0} max={1} step={0.01} onChange={(v) => setMarble('veinIntensity', v)} sound="mech5" />
-              </div>
-              <div className="space-y-1">
-                <SectionLabel>{t('marble.veinScale')}</SectionLabel>
-                <Slider value={state.marbleParams.veinScale} min={1} max={10} step={0.1} onChange={(v) => setMarble('veinScale', v)} disabled={state.marbleParams.veinIntensity === 0} sound="mech5" />
-              </div>
+              <Slider label={t('marble.veinIntensity')} value={state.marbleParams.veinIntensity} min={0} max={1} step={0.01} onChange={(v) => setMarble('veinIntensity', v)} sound="mech5" />
+              <Slider label={t('marble.veinScale')} value={state.marbleParams.veinScale} min={1} max={10} step={0.1} onChange={(v) => setMarble('veinScale', v)} disabled={state.marbleParams.veinIntensity === 0} sound="mech5" />
               <div className="flex items-center justify-between">
                 <SectionLabel>{t('marble.veinColor')}</SectionLabel>
                 <input type="color" value={state.marbleParams.veinColor} onChange={(e) => setMarble('veinColor', e.target.value)} disabled={state.marbleParams.veinIntensity === 0} className="color-swatch" />
@@ -529,10 +569,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             </ControlGroup>
 
             <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Shuffle style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('marble.sectionDetail')}</span>}>
-              <div className="space-y-1">
-                <SectionLabel>{t('marble.grain')}</SectionLabel>
-                <Slider value={state.marbleParams.grain} min={0} max={100} onChange={(v) => setMarble('grain', v)} sound="mech5" />
-              </div>
+              <Slider label={t('marble.grain')} value={state.marbleParams.grain} min={0} max={100} onChange={(v) => setMarble('grain', v)} sound="mech5" />
             </ControlGroup>
 
             <ControlGroup
@@ -540,10 +577,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               suffix={<Toggle checked={state.marbleParams.animated} onChange={(v) => { setMarble('animated', v); playSound('BubblePop') }} />}
             >
               {state.marbleParams.animated && (
-                <div className="space-y-1">
-                  <SectionLabel>{t('sectionAnimSpeed')}</SectionLabel>
-                  <Slider value={state.marbleParams.speed} min={0.1} max={3} step={0.1} onChange={(v) => setMarble('speed', v)} sound="mech5" />
-                </div>
+                <Slider label={t('sectionAnimSpeed')} value={state.marbleParams.speed} min={0.1} max={3} step={0.1} onChange={(v) => setMarble('speed', v)} sound="mech5" />
               )}
             </ControlGroup>
           </>
@@ -585,8 +619,9 @@ export function Sidebar({ canvasRef }: SidebarProps) {
       </div>
 
       {/* 底部固定操作栏 */}
+      {/* 底部固定操作栏 */}
       <div className="flex-shrink-0 px-4 py-3" style={{ borderTop: '1px solid var(--color-border-faint)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
           <button
             onClick={handleInspire}
             style={{
@@ -594,8 +629,8 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              fontSize: 12,
+              gap: 5,
+              fontSize: 11,
               fontWeight: 500,
               color: 'var(--color-text-primary)',
               backgroundColor: 'transparent',
@@ -607,8 +642,31 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-text-muted)')}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
           >
-            <Lightbulb style={{ width: 13, height: 13, flexShrink: 0 }} />
+            <Lightbulb style={{ width: 12, height: 12, flexShrink: 0 }} />
             {tActions('inspire')}
+          </button>
+          <button
+            onClick={handleRandomize}
+            style={{
+              height: 32,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 5,
+              fontSize: 11,
+              fontWeight: 500,
+              color: 'var(--color-text-primary)',
+              backgroundColor: 'transparent',
+              border: '1px solid var(--color-border-group)',
+              borderRadius: 6,
+              cursor: 'pointer',
+              transition: 'border-color 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-text-muted)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
+          >
+            <Dices style={{ width: 12, height: 12, flexShrink: 0 }} />
+            {tActions('randomize')}
           </button>
           <button
             onClick={handleReset}
@@ -617,8 +675,8 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              fontSize: 12,
+              gap: 5,
+              fontSize: 11,
               fontWeight: 500,
               color: 'var(--color-text-primary)',
               backgroundColor: 'transparent',
@@ -630,7 +688,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-text-muted)')}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
           >
-            <RotateCcw style={{ width: 13, height: 13, flexShrink: 0 }} />
+            <RotateCcw style={{ width: 12, height: 12, flexShrink: 0 }} />
             {tActions('reset')}
           </button>
           <button
@@ -640,8 +698,8 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              fontSize: 12,
+              gap: 5,
+              fontSize: 11,
               fontWeight: 500,
               color: saveStatus === 'saved' ? '#60a5fa' : 'var(--color-text-primary)',
               backgroundColor: 'transparent',
@@ -653,7 +711,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
             onMouseEnter={e => { if (saveStatus === 'idle') e.currentTarget.style.borderColor = 'var(--color-text-muted)' }}
             onMouseLeave={e => { if (saveStatus === 'idle') e.currentTarget.style.borderColor = 'var(--color-border-group)' }}
           >
-            <Bookmark style={{ width: 13, height: 13, flexShrink: 0, fill: saveStatus === 'saved' ? 'currentColor' : 'none' }} />
+            <Bookmark style={{ width: 12, height: 12, flexShrink: 0, fill: saveStatus === 'saved' ? 'currentColor' : 'none' }} />
             {saveStatus === 'saved' ? tActions('saved') : saveStatus === 'duplicate' ? tActions('duplicate') : tActions('save')}
           </button>
         </div>

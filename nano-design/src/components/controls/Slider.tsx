@@ -160,6 +160,9 @@ export function Slider({ label, value, min, max, step = 1, onChange, disabled, s
             {label && <span className="text-neutral-300">{label}</span>}
             {suffix}
           </div>
+          <span className="text-neutral-500" style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
+            {step < 1 ? value.toFixed(Math.max(0, -Math.floor(Math.log10(step)))) : value}
+          </span>
         </div>
       )}
 

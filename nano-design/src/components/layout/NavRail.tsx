@@ -50,10 +50,10 @@ function DitherIcon({ palette }: { palette: Palette }) {
   )
 }
 
-const EFFECTS: { id: EffectType; palette: Palette }[] = [
-  { id: 'ascii',  palette: ['#40351a', '#7a6a2d', '#b5a15a', '#e0d08f'] },
-  { id: 'glitch', palette: ['#2d1a40', '#5a2d7a', '#8b5ab5', '#bc8fe0'] },
-  { id: 'marble', palette: ['#3d2b1a', '#8a6b4a', '#c4a882', '#e8dcd0'] },
+const EFFECTS: { id: EffectType; palette?: Palette; icon?: string }[] = [
+  { id: 'ascii',  icon: '/icon-ascii.png' },
+  { id: 'glitch', icon: '/icon-glitch.png' },
+  { id: 'marble', icon: '/icon-marble.png' },
   { id: 'other',  palette: ['#1a3340', '#2d5c6b', '#5a8f9e', '#8fc2d1'] },
 ]
 
@@ -154,7 +154,11 @@ export function NavRail() {
                   if (!active) (e.currentTarget as HTMLDivElement).style.filter = 'grayscale(100%) brightness(0.5)'
                 }}
               >
-                <DitherIcon palette={effect.palette} />
+                {effect.icon ? (
+                  <img src={effect.icon} alt={effect.id} style={{ width: 30, height: 30, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
+                ) : (
+                  <DitherIcon palette={effect.palette!} />
+                )}
               </div>
               <span style={{
                 fontSize: 9,

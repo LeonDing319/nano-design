@@ -7,10 +7,10 @@ import { useTranslations } from 'next-intl'
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10MB
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024 // 100MB
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const ACCEPTED_VIDEO_TYPES = ['video/mp4']
+const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/mpeg']
 const ACCEPTED_TYPES = [...ACCEPTED_IMAGE_TYPES, ...ACCEPTED_VIDEO_TYPES]
 
-export const ACCEPT_STRING = 'image/jpeg,image/png,image/webp,video/mp4'
+export const ACCEPT_STRING = 'image/jpeg,image/png,image/webp,video/mp4,video/mpeg'
 
 export function useImageUpload() {
   const { dispatch } = useAppState()
@@ -70,6 +70,7 @@ export function useImageUpload() {
         const img = await loadImage(file)
         dispatch({ type: 'SET_IMAGE', payload: img })
       }
+      window.dispatchEvent(new CustomEvent('nano:user-upload'))
     } catch (error) {
       console.error('Upload error:', error)
       throw error
