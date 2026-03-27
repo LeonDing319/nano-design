@@ -33,112 +33,6 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
   const tExport = useTranslations('export')
   const hasSource = hasImage || !!state.video
 
-  const rippleLayerRef = useRef<HTMLDivElement>(null)
-  const bannerContainerRef = useRef<HTMLDivElement>(null)
-  const distortFilterId = 'banner-water-distort'
-
-  // 确保 SVG filter 存在
-  useEffect(() => {
-    if (document.getElementById(distortFilterId)) return
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    svg.setAttribute('width', '0')
-    svg.setAttribute('height', '0')
-    svg.style.position = 'absolute'
-    svg.innerHTML = `<filter id="${distortFilterId}">
-      <feTurbulence type="turbulence" baseFrequency="0.012 0.035" numOctaves="3" seed="2" result="turb"/>
-      <feDisplacementMap in="SourceGraphic" in2="turb" scale="60" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>`
-    document.body.appendChild(svg)
-  }, [])
-
-  const triggerRipple = useCallback((btn: HTMLElement) => {
-    const layer = rippleLayerRef.current
-    const container = bannerContainerRef.current
-    if (!layer || !container) return
-    const containerRect = container.getBoundingClientRect()
-    const btnRect = btn.getBoundingClientRect()
-    const cx = btnRect.left + btnRect.width / 2 - containerRect.left
-    const cy = btnRect.top + btnRect.height / 2 - containerRect.top
-    const maxR = Math.hypot(
-      Math.max(cx, containerRect.width - cx),
-      Math.max(cy, containerRect.height - cy),
-    )
-    const size = maxR * 2.2
-
-    // 扭曲层：多圈扭曲副本，和涟漪同步扩散
-    const img = container.querySelector('img')
-    if (img) {
-      const pad = 12
-      const maxRadius = size / 2
-      const distortWaves = [
-        { delay: 0,   opacity: 1.0 },
-        { delay: 200, opacity: 0.7 },
-        { delay: 450, opacity: 0.4 },
-      ]
-      distortWaves.forEach(({ delay, opacity }) => {
-        const clone = img.cloneNode() as HTMLImageElement
-        const cloneCx = cx + pad
-        const cloneCy = cy + pad
-        Object.assign(clone.style, {
-          position: 'absolute',
-          top: `${-pad}px`,
-          left: `${-pad}px`,
-          width: `calc(100% + ${pad * 2}px)`,
-          height: `calc(100% + ${pad * 2}px)`,
-          objectFit: 'cover',
-          borderRadius: '8px',
-          filter: `url(#${distortFilterId})`,
-          clipPath: `circle(0px at ${cloneCx}px ${cloneCy}px)`,
-          pointerEvents: 'none',
-          zIndex: '1',
-          border: 'none',
-        })
-        container.insertBefore(clone, layer)
-        setTimeout(() => {
-          const anim = clone.animate([
-            { clipPath: `circle(0px at ${cloneCx}px ${cloneCy}px)`, opacity },
-            { clipPath: `circle(${maxRadius}px at ${cloneCx}px ${cloneCy}px)`, opacity: 0 },
-          ], { duration: 3500, easing: 'cubic-bezier(0.05, 0, 0, 1)', fill: 'forwards' })
-          anim.onfinish = () => clone.remove()
-        }, delay)
-      })
-    }
-
-    // 发 5 圈涟漪，层层递进
-    const waves = [
-      { delay: 0,    opacity: 0.20, fill: true },
-      { delay: 200,  opacity: 0.16, fill: false },
-      { delay: 450,  opacity: 0.12, fill: false },
-      { delay: 750,  opacity: 0.08, fill: false },
-      { delay: 1100, opacity: 0.05, fill: false },
-    ]
-    waves.forEach(({ delay, opacity, fill }) => {
-      const ripple = document.createElement('div')
-      Object.assign(ripple.style, {
-        position: 'absolute',
-        left: `${cx}px`,
-        top: `${cy}px`,
-        width: '0px',
-        height: '0px',
-        borderRadius: '50%',
-        border: `1px solid rgba(255,255,255,${opacity})`,
-        background: fill
-          ? `radial-gradient(circle, rgba(255,255,255,${opacity}) 0%, rgba(255,255,255,0.05) 50%, transparent 100%)`
-          : 'transparent',
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none',
-      })
-      layer.appendChild(ripple)
-      setTimeout(() => {
-        const anim = ripple.animate([
-          { width: '0px', height: '0px', opacity: 1 },
-          { width: `${size}px`, height: `${size}px`, opacity: 0 },
-        ], { duration: 3500, easing: 'cubic-bezier(0.05, 0, 0, 1)', fill: 'forwards' })
-        anim.onfinish = () => ripple.remove()
-      }, delay)
-    })
-  }, [])
-
   const [exportFormat, setExportFormat] = useState<ExportFormat>('PNG')
   const [exporting, setExporting] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
@@ -338,9 +232,9 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
       style={dragging ? { outline: '2px dashed var(--color-text-muted)', outlineOffset: -2, borderRadius: 8 } : undefined}
     >
       {/* Preview banner */}
-      <div ref={bannerContainerRef} style={{ position: 'relative', overflow: 'hidden', borderRadius: '8px' }}>
+      <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '8px' }}>
         <img
-          src={state.activeEffect === 'ascii' ? '/preview-banner-ascii.png' : '/preview-banner.png'}
+          src={state.activeEffect === 'ascii' ? '/preview-banner-ascii.png' : state.activeEffect === 'marble' ? '/preview-banner-marble.png' : state.activeEffect === 'other' ? '/preview-banner-other.png' : '/preview-banner.png'}
           alt="Preview"
           style={{
             width: '100%',
@@ -348,19 +242,12 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
             objectFit: 'cover',
             border: '1px solid var(--color-border-group)',
             borderRadius: '8px',
-            transition: 'opacity 0.3s ease',
+            opacity: 0.35,
+            filter: state.activeEffect === 'other' ? 'saturate(0.4)' : undefined,
+            transition: 'opacity 0.3s ease, filter 0.3s ease',
           }}
-        />
-        {/* Ripple layer */}
-        <div
-          ref={rippleLayerRef}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            pointerEvents: 'none',
-            overflow: 'hidden',
-            borderRadius: '8px',
-          }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.filter = '' }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '0.35'; if (state.activeEffect === 'other') e.currentTarget.style.filter = 'saturate(0.4)' }}
         />
       </div>
 
@@ -381,13 +268,13 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
             overflow: 'hidden',
             color: 'var(--color-text-primary)',
             backgroundColor: 'transparent',
-            border: '1px solid var(--color-border)',
+            border: '1px solid var(--color-border-group)',
             borderRadius: '6px',
             cursor: 'pointer',
             transition: 'border-color 0.15s',
           }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-text-muted)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
         >
           <ImageIcon style={{ width: 14, height: 14, flexShrink: 0 }} />
           <span>{t('title')}</span>
@@ -410,14 +297,14 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
               fontWeight: 500,
               color: 'var(--color-text-primary)',
               backgroundColor: 'transparent',
-              border: '1px solid var(--color-border)',
+              border: '1px solid var(--color-border-group)',
               borderRadius: '6px',
               cursor: !hasSource || exporting ? 'not-allowed' : 'pointer',
-              opacity: !hasSource || exporting ? 0.4 : 1,
+              opacity: 1,
               transition: 'border-color 0.15s',
             }}
-            onMouseEnter={e => { if (hasSource) e.currentTarget.style.borderColor = 'var(--color-border-group)' }}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
+            onMouseEnter={e => { if (hasSource) e.currentTarget.style.borderColor = 'var(--color-text-muted)' }}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
           >
             <Download style={{ width: 14, height: 14, flexShrink: 0 }} />
             <span>{exporting ? tExport('processing') : tExport('button')}</span>

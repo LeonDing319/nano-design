@@ -1,9 +1,10 @@
 'use client'
 
 import { useReducer, createContext, useContext } from 'react'
-import { AppState, EffectType, GlitchParams, AsciiParams, VideoPlaybackState } from '@/types'
+import { AppState, EffectType, GlitchParams, AsciiParams, MarbleParams, VideoPlaybackState } from '@/types'
 import { DEFAULT_GLITCH_PARAMS } from '@/presets/glitch-presets'
 import { DEFAULT_ASCII_PARAMS } from '@/presets/ascii-presets'
+import { DEFAULT_MARBLE_PARAMS } from '@/presets/marble-presets'
 
 type Action =
   | { type: 'SET_IMAGE'; payload: HTMLImageElement | null }
@@ -14,7 +15,8 @@ type Action =
   | { type: 'SET_ASCII_PARAMS'; payload: Partial<AsciiParams> }
   | { type: 'SET_GLITCH_PRESET'; payload: GlitchParams }
   | { type: 'SET_ASCII_PRESET'; payload: AsciiParams }
-  | { type: 'SET_LOCALE'; payload: 'zh' | 'en' }
+  | { type: 'SET_MARBLE_PARAMS'; payload: Partial<MarbleParams> }
+  | { type: 'SET_MARBLE_PRESET'; payload: MarbleParams }
   | { type: 'SET_SHOW_ABOUT'; payload: boolean }
 
 export const DEFAULT_VIDEO_PLAYBACK: VideoPlaybackState = {
@@ -32,7 +34,8 @@ export const initialAppState: AppState = {
   activeEffect: 'ascii',
   glitchParams: DEFAULT_GLITCH_PARAMS,
   asciiParams: DEFAULT_ASCII_PARAMS,
-  locale: 'en',
+  marbleParams: DEFAULT_MARBLE_PARAMS,
+  locale: 'zh',
   theme: 'dark',
   showAbout: false,
 }
@@ -40,9 +43,9 @@ export const initialAppState: AppState = {
 export function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SET_IMAGE':
-      return { ...state, image: action.payload, video: null, videoPlayback: DEFAULT_VIDEO_PLAYBACK }
+      return { ...state, image: action.payload, video: null, videoPlayback: DEFAULT_VIDEO_PLAYBACK, glitchParams: DEFAULT_GLITCH_PARAMS, asciiParams: DEFAULT_ASCII_PARAMS, marbleParams: DEFAULT_MARBLE_PARAMS }
     case 'SET_VIDEO':
-      return { ...state, video: action.payload, image: null, videoPlayback: DEFAULT_VIDEO_PLAYBACK }
+      return { ...state, video: action.payload, image: null, videoPlayback: DEFAULT_VIDEO_PLAYBACK, glitchParams: DEFAULT_GLITCH_PARAMS, asciiParams: DEFAULT_ASCII_PARAMS, marbleParams: DEFAULT_MARBLE_PARAMS }
     case 'SET_VIDEO_PLAYBACK':
       return { ...state, videoPlayback: { ...state.videoPlayback, ...action.payload } }
     case 'SET_EFFECT':
@@ -55,8 +58,10 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, glitchParams: action.payload }
     case 'SET_ASCII_PRESET':
       return { ...state, asciiParams: action.payload }
-    case 'SET_LOCALE':
-      return { ...state, locale: action.payload }
+    case 'SET_MARBLE_PARAMS':
+      return { ...state, marbleParams: { ...state.marbleParams, ...action.payload } }
+    case 'SET_MARBLE_PRESET':
+      return { ...state, marbleParams: action.payload }
     case 'SET_SHOW_ABOUT':
       return { ...state, showAbout: action.payload }
     default:

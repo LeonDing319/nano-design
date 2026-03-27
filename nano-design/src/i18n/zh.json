@@ -5,12 +5,13 @@
   },
   "effects": {
     "glitch": "故障艺术",
-    "ascii": "代码艺术",
+    "ascii": "ASCII",
+    "marble": "液态",
     "other": "其他效果"
   },
   "upload": {
     "title": "上传",
-    "dragHint": "拖拽图片到此处上传",
+    "dragHint": "拖入图片，开始创作～",
     "formats": "支持 JPG、PNG、WebP，最大 10MB",
     "dropOverlay": "将图片拖放到此处",
     "error": {
@@ -48,6 +49,23 @@
     "sectionAnimSpeed": "速度",
     "sectionAnimIntensity": "强度",
     "sectionAnimRandomness": "随机性",
+    "sectionColorTint": "色彩叠加",
+    "sectionColorTintOpacity": "透明度",
+    "sectionColorTintBlend": "混合模式",
+    "sectionColorTintColor": "颜色",
+    "blendModes": {
+      "multiply": "正片叠底",
+      "overlay": "叠加",
+      "screen": "滤色",
+      "color": "颜色",
+      "hue": "色相",
+      "saturation": "饱和度",
+      "luminosity": "明度",
+      "soft-light": "柔光",
+      "hard-light": "强光",
+      "color-burn": "颜色加深",
+      "color-dodge": "颜色减淡"
+    },
     "sectionCharOpacity": "透明度",
     "sectionCharBrightness": "亮度",
     "sectionCharContrast": "对比度",
@@ -82,6 +100,25 @@
       "none": "无裁切",
       "circle": "圆形",
       "rectangle": "矩形"
+    },
+    "marble": {
+      "sectionColor": "配色",
+      "colorMain": "主色",
+      "colorLow": "暗部",
+      "colorMid": "中间色",
+      "colorHigh": "高光",
+      "sectionShape": "形态",
+      "noiseScale": "噪波缩放",
+      "warpPower": "扭曲强度",
+      "fbmStrength": "FBM 强度",
+      "fbmDamping": "FBM 阻尼",
+      "blurRadius": "模糊半径",
+      "sectionVein": "纹脉",
+      "veinIntensity": "强度",
+      "veinScale": "缩放",
+      "veinColor": "颜色",
+      "sectionDetail": "细节",
+      "grain": "颗粒感"
     }
   },
   "export": {
@@ -127,6 +164,13 @@
     "statusSaved": "已保存!",
     "statusDuplicate": "已存在",
     "saveButton": "保存"
+  },
+  "actions": {
+    "inspire": "灵感",
+    "reset": "重置",
+    "save": "收藏",
+    "saved": "已收藏",
+    "duplicate": "已存在"
   },
   "about": {
     "title": "Nano Design",

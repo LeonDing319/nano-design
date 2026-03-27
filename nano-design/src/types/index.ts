@@ -1,4 +1,4 @@
-export type EffectType = 'ascii' | 'glitch' | 'other'
+export type EffectType = 'ascii' | 'glitch' | 'marble' | 'other'
 
 export interface GlitchParams {
   stripeDensity: number      // 0-50
@@ -44,6 +44,29 @@ export interface AsciiParams {
   animSpeed: number          // 0.1-5 频率倍率
   animIntensity: number      // 0-100
   animRandomness: number     // 0-100
+
+  // Color Tint
+  colorTint: string          // hex color
+  colorTintOpacity: number   // 0-100
+  colorTintBlend: GlobalCompositeOperation // blend mode
+}
+
+export interface MarbleParams {
+  colorMain: string
+  colorLow: string
+  colorMid: string
+  colorHigh: string
+  noiseScale: number         // 0.5-3.0
+  warpPower: number          // 0-1
+  fbmStrength: number        // 0.1-3.0
+  fbmDamping: number         // 0.1-1.0
+  blurRadius: number         // 0.1-3.0
+  veinIntensity: number      // 0-1
+  veinScale: number          // 1-10
+  veinColor: string
+  grain: number              // 0-100
+  animated: boolean
+  speed: number              // 0.1-3.0
 }
 
 export type ExportFormat = 'png' | 'gif' | 'html' | 'canvas-code'
@@ -63,7 +86,8 @@ export interface AppState {
   activeEffect: EffectType
   glitchParams: GlitchParams
   asciiParams: AsciiParams
-  locale: 'zh' | 'en'
+  marbleParams: MarbleParams
+  locale: 'zh'
   theme: 'dark'
   showAbout: boolean
 }

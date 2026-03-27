@@ -53,6 +53,7 @@ function DitherIcon({ palette }: { palette: Palette }) {
 const EFFECTS: { id: EffectType; palette: Palette }[] = [
   { id: 'ascii',  palette: ['#40351a', '#7a6a2d', '#b5a15a', '#e0d08f'] },
   { id: 'glitch', palette: ['#2d1a40', '#5a2d7a', '#8b5ab5', '#bc8fe0'] },
+  { id: 'marble', palette: ['#3d2b1a', '#8a6b4a', '#c4a882', '#e8dcd0'] },
   { id: 'other',  palette: ['#1a3340', '#2d5c6b', '#5a8f9e', '#8fc2d1'] },
 ]
 
@@ -172,48 +173,9 @@ export function NavRail() {
       {/* mt-auto 把下面内容推到底部 */}
       <div style={{ marginTop: 'auto' }} />
 
-      {/* 语言切换按钮 */}
-      <button
-        onClick={() => dispatch({ type: 'SET_LOCALE', payload: state.locale === 'en' ? 'zh' : 'en' })}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 6,
-          padding: 0,
-          border: 'none',
-          background: 'none',
-          cursor: 'pointer',
-        }}
-      >
-        <div style={{
-          width: 34,
-          height: 34,
-          borderRadius: 8,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'transparent',
-          transition: 'all 0.15s',
-          fontSize: 13,
-          fontWeight: 500,
-          color: 'var(--color-text-muted)',
-          letterSpacing: 0.5,
-        }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLDivElement).style.color = 'var(--color-text-primary)'
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLDivElement).style.color = 'var(--color-text-muted)'
-          }}
-        >
-          {state.locale === 'en' ? '中' : 'EN'}
-        </div>
-      </button>
-
       {/* Saved 按钮 */}
       <button
-        onClick={() => setShowSavedPanel(v => !v)}
+        onClick={() => { setShowSavedPanel(v => !v); playSound('Frog') }}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -264,7 +226,7 @@ export function NavRail() {
 
       {/* About 按钮，固定在底部 */}
       <button
-        onClick={() => dispatch({ type: 'SET_SHOW_ABOUT', payload: !state.showAbout })}
+        onClick={() => { dispatch({ type: 'SET_SHOW_ABOUT', payload: !state.showAbout }); playSound('Frog') }}
         style={{
           display: 'flex',
           flexDirection: 'column',

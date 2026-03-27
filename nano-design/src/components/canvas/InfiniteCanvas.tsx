@@ -43,8 +43,27 @@ function clampVP(
   return { x, y, zoom }
 }
 
+function TypewriterHint({ text }: { text: string }) {
+  const [count, setCount] = useState(0)
+  const chars = [...text] // spread to handle emoji as single units
+
+  useEffect(() => {
+    if (count >= chars.length) return
+    const delay = 1500 / chars.length
+    const timer = setTimeout(() => setCount(c => c + 1), delay)
+    return () => clearTimeout(timer)
+  }, [count, chars.length])
+
+  return (
+    <p className="text-neutral-600 select-none" style={{ fontSize: 18 }}>
+      {chars.slice(0, count).join('')}
+      {count < chars.length && <span className="animate-pulse">|</span>}
+    </p>
+  )
+}
+
 export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
-  const { state } = useAppState()
+  const { state, dispatch } = useAppState()
   const { handleUpload } = useImageUpload()
   const t = useTranslations('upload')
   const containerRef = useRef<HTMLDivElement>(null)
@@ -63,15 +82,19 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
   const imageSizeRef = useRef({ width: 0, height: 0 })
 
   const source = state.video || state.image
+  const isMarble = state.activeEffect === 'marble'
+  const hasContent = !!source || isMarble
 
   // 用 ref 保存图片尺寸，供事件回调访问
   useEffect(() => {
     if (source) {
       imageSizeRef.current = getDisplaySize(source)
+    } else if (isMarble) {
+      imageSizeRef.current = { width: 800, height: 800 }
     } else {
       imageSizeRef.current = { width: 0, height: 0 }
     }
-  }, [source])
+  }, [source, isMarble])
 
   const clamp = useCallback((v: { x: number; y: number; zoom: number }) => {
     const el = containerRef.current
@@ -82,9 +105,9 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
   }, [])
 
   useEffect(() => {
-    if (source && containerRef.current) {
+    if (hasContent && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
-      const { width: dw, height: dh } = getDisplaySize(source)
+      const { width: dw, height: dh } = source ? getDisplaySize(source) : { width: 800, height: 800 }
       const fitZoom = Math.min(rect.width / dw, rect.height / dh)
       const scaledW = dw * fitZoom
       const scaledH = dh * fitZoom
@@ -95,7 +118,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
         zoom: fitZoom,
       })
     }
-  }, [source])
+  }, [source, isMarble])
 
   useEffect(() => {
     const el = containerRef.current
@@ -259,7 +282,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
           willChange: 'transform',
         }}
       >
-        {source && (
+        {hasContent && (
           <div
             className="absolute"
             style={{
@@ -275,10 +298,10 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
         )}
       </div>
 
-      {/* Empty state hint */}
-      {!source && !isFileDragOver && (
+      {/* Empty state hint with typewriter effect */}
+      {!hasContent && !isFileDragOver && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-sm text-neutral-600 select-none">{t('dragHint')}</p>
+          <TypewriterHint text={t('dragHint')} />
         </div>
       )}
 
@@ -290,46 +313,55 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
         </div>
       )}
 
-      {source && (
-        <button
-          type="button"
-          onClick={() => {
-            if (!source || !containerRef.current) return
-            const rect = containerRef.current.getBoundingClientRect()
-            const { width: dw, height: dh } = getDisplaySize(source)
-            const fitZoom = Math.min(rect.width / dw, rect.height / dh)
-            const scaledW = dw * fitZoom
-            const scaledH = dh * fitZoom
-            setNodePos({ x: 0, y: 0 })
-            setViewport({
-              x: (rect.width - scaledW) / 2,
-              y: (rect.height - scaledH) / 2,
-              zoom: fitZoom,
-            })
-          }}
-          className="select-none"
-          style={{
-            position: 'absolute',
-            bottom: 16,
-            right: 16,
-            zIndex: 50,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            border: '1px solid var(--color-border-group)',
-            backgroundColor: 'var(--color-bg-elevated)',
-            color: 'var(--color-text-secondary)',
-            cursor: 'pointer',
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text-primary)' }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-secondary)' }}
-        >
-          <Maximize style={{ width: 14, height: 14 }} />
-        </button>
+      {hasContent && (
+        <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 50 }}>
+          <button
+            type="button"
+            onClick={() => {
+              if (!containerRef.current) return
+              const rect = containerRef.current.getBoundingClientRect()
+              const { width: dw, height: dh } = source ? getDisplaySize(source) : { width: 800, height: 800 }
+              const fitZoom = Math.min(rect.width / dw, rect.height / dh)
+              const scaledW = dw * fitZoom
+              const scaledH = dh * fitZoom
+              setNodePos({ x: 0, y: 0 })
+              setViewport({
+                x: (rect.width - scaledW) / 2,
+                y: (rect.height - scaledH) / 2,
+                zoom: fitZoom,
+              })
+            }}
+            className="select-none"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 9999,
+              border: '1px solid rgba(255,255,255,0.12)',
+              backgroundColor: 'rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(16px) saturate(1.4)',
+              WebkitBackdropFilter: 'blur(16px) saturate(1.4)',
+              boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.3)',
+              color: 'rgba(255,255,255,0.85)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.12)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'
+              e.currentTarget.style.color = 'rgba(255,255,255,1)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+              e.currentTarget.style.color = 'rgba(255,255,255,0.85)'
+            }}
+          >
+            <Maximize style={{ width: 14, height: 14 }} />
+          </button>
+        </div>
       )}
     </div>
   )

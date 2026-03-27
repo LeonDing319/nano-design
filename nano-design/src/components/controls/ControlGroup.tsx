@@ -43,7 +43,7 @@ interface SectionLabelProps {
 export function SectionLabel({ children }: SectionLabelProps) {
   return (
     <div style={{
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: 400,
       color: '#a0a0a0',
       display: 'flex',

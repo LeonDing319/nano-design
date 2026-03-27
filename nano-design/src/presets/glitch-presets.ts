@@ -87,6 +87,26 @@ export const GLITCH_PRESETS: Preset<GlitchParams>[] = [
   },
 ]
 
+export function randomizeGlitchParams(): GlitchParams {
+  const duotone = Math.random() > 0.7
+  return {
+    stripeDensity: Math.floor(Math.random() * 51),
+    displacement: Math.floor(Math.random() * 21),
+    verticalSpeed: Math.random() > 0.6 ? Math.floor(Math.random() * 15) : 0,
+    rgbSplit: Math.floor(Math.random() * 26),
+    rgbSplitDirection: Math.floor(Math.random() * 361),
+    rgbSplitDirectionAnim: Math.random() > 0.7,
+    clipShape: 'none',
+    duotone,
+    duotoneLightColor: duotone ? `#${Math.floor(Math.random()*16777215).toString(16).padStart(6,'0')}` : '#e7305e',
+    duotoneDarkColor: duotone ? `#${Math.floor(Math.random()*16777215).toString(16).padStart(6,'0')}` : '#2e3060',
+    dotSize: Math.random() > 0.5 ? Math.round(Math.random() * 50) / 10 : 0,
+    dotOpacity: Math.round(Math.random() * 70) / 100,
+    corruption: Math.random() > 0.6 ? Math.floor(Math.random() * 60) : 0,
+    scanlines: Math.random() > 0.6,
+  }
+}
+
 export const DEFAULT_GLITCH_PARAMS: GlitchParams = {
   stripeDensity: 0,
   displacement: 0,

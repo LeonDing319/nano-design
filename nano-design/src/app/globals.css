@@ -12,7 +12,7 @@ html, body {
 /* Dark theme (default) */
 :root, html[data-theme="dark"] {
   --color-bg-base: #0a0a0a;
-  --color-sidebar: #0a0a0a;
+  --color-sidebar: #000000;
   --color-bg-primary: #171717;
   --color-bg-secondary: #2C2C2C;
   --color-bg-elevated: #262626;
@@ -44,7 +44,7 @@ html, body {
   width: 56px;
   height: 20px;
   padding: 0;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.2);
   border-radius: 9999px;
   cursor: pointer;
   background: none;

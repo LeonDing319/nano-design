@@ -1,7 +1,5 @@
 'use client'
 
-import { LocaleToggle } from './LocaleToggle'
-
 export function Header() {
   return (
     <header style={{
@@ -22,9 +20,6 @@ export function Header() {
       }}>
         Nano Design
       </span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <LocaleToggle />
-      </div>
     </header>
   )
 }

@@ -164,7 +164,7 @@ export function Slider({ label, value, min, max, step = 1, onChange, disabled, s
       )}
 
       {/* Outer container — full width, used for input hit area */}
-      <div ref={trackRef} style={{ position: 'relative', height: THUMB, opacity: disabled ? 0.4 : 1 }}>
+      <div ref={trackRef} style={{ position: 'relative', height: THUMB, opacity: disabled ? 0.4 : 1, overflow: 'hidden', borderRadius: 9999 }}>
         {/* Track — full width background */}
         <div style={{
           position: 'absolute', inset: 0, borderRadius: 9999,

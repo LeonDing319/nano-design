@@ -76,8 +76,9 @@ function DesignName({ design, onRename }: { design: SavedDesign; onRename: (name
 }
 
 const EFFECT_LABELS: Record<EffectType, { zh: string; en: string }> = {
-  ascii: { zh: '代码艺术', en: 'ASCII' },
+  ascii: { zh: 'ASCII', en: 'ASCII' },
   glitch: { zh: '故障艺术', en: 'Glitch' },
+  marble: { zh: '液态', en: 'Marble' },
   other: { zh: '其他效果', en: 'Other' },
 }
 

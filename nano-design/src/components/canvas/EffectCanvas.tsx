@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef, memo }
 import { useAppState } from '@/hooks/useEffectParams'
 import { renderGlitch, applyDuotone } from '@/engines/glitch'
 import { renderAscii } from '@/engines/ascii'
+import { createMarbleEngine, MarbleEngine } from '@/engines/marble'
 
 const MAX_DISPLAY_DIM = 1600
 
@@ -24,28 +25,64 @@ function renderOriginal(
   ctx.drawImage(sourceImage, 0, 0, canvasWidth, canvasHeight)
 }
 
+const MARBLE_DEFAULT_SIZE = 800
+
 export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCanvas(_, ref) {
   const { state } = useAppState()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationRef = useRef<number>(0)
   const frameRef = useRef<number>(0)
   const lastSizeRef = useRef({ w: 0, h: 0 })
+  const marbleEngineRef = useRef<MarbleEngine | null>(null)
 
   useImperativeHandle(ref, () => canvasRef.current!, [])
 
+  // 管理 marble WebGL 引擎生命周期
+  useEffect(() => {
+    if (state.activeEffect === 'marble') {
+      if (!marbleEngineRef.current) {
+        marbleEngineRef.current = createMarbleEngine()
+      }
+    } else {
+      if (marbleEngineRef.current) {
+        marbleEngineRef.current.destroy()
+        marbleEngineRef.current = null
+      }
+    }
+    return () => {
+      if (marbleEngineRef.current) {
+        marbleEngineRef.current.destroy()
+        marbleEngineRef.current = null
+      }
+    }
+  }, [state.activeEffect])
+
   const render = useCallback(() => {
     const canvas = canvasRef.current
+    if (!canvas) return
+
+    const isMarble = state.activeEffect === 'marble'
     const source = state.video || state.image
-    if (!canvas || !source) return
+
+    // 非 marble 效果需要源图片
+    if (!isMarble && !source) return
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const { width, height } = getDisplaySize(source)
+    let width: number, height: number
+    if (source) {
+      const size = getDisplaySize(source)
+      width = size.width
+      height = size.height
+    } else {
+      width = MARBLE_DEFAULT_SIZE
+      height = MARBLE_DEFAULT_SIZE
+    }
+
     const dpr = window.devicePixelRatio || 1
     const pw = width * dpr
     const ph = height * dpr
-    // 只在尺寸变化时重设 canvas 大小（避免每帧清空重建）
     if (lastSizeRef.current.w !== pw || lastSizeRef.current.h !== ph) {
       canvas.width = pw
       canvas.height = ph
@@ -55,12 +92,19 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    if (state.activeEffect === 'glitch') {
-      renderGlitch(ctx, source, state.glitchParams, width, height, frameRef.current)
+    if (isMarble) {
+      const engine = marbleEngineRef.current
+      if (!engine) return
+      engine.resize(pw, ph)
+      engine.render(state.marbleParams, state.marbleParams.animated)
+      ctx.clearRect(0, 0, width, height)
+      engine.copyTo2D(ctx, 0, 0, width, height)
+    } else if (state.activeEffect === 'glitch') {
+      renderGlitch(ctx, source!, state.glitchParams, width, height, frameRef.current)
     } else if (state.activeEffect === 'ascii') {
-      renderAscii(ctx, source, state.asciiParams, width, height, frameRef.current)
+      renderAscii(ctx, source!, state.asciiParams, width, height, frameRef.current)
     } else {
-      renderOriginal(ctx, source, width, height)
+      renderOriginal(ctx, source!, width, height)
       if (state.glitchParams.duotone) {
         applyDuotone(ctx, canvas.width, canvas.height, state.glitchParams.duotoneLightColor, state.glitchParams.duotoneDarkColor)
       }
@@ -69,8 +113,10 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
   }, [state])
 
   useEffect(() => {
+    const isMarble = state.activeEffect === 'marble'
     const source = state.video || state.image
-    if (!source) return
+
+    if (!isMarble && !source) return
 
     const isVideoMode = !!state.video
     const isAnimating = isVideoMode || (
@@ -81,6 +127,8 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
       )
     ) || (
       state.activeEffect === 'ascii' && state.asciiParams.animated
+    ) || (
+      isMarble && state.marbleParams.animated
     )
 
     if (isAnimating) {
@@ -93,16 +141,24 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
       return () => { cancelAnimationFrame(animationRef.current) }
     } else {
       frameRef.current = 0
-      // Schedule render on next animation frame to avoid blocking slider interactions
       const raf = requestAnimationFrame(() => render())
       return () => cancelAnimationFrame(raf)
     }
   }, [state, render])
 
+  const isMarble = state.activeEffect === 'marble'
   const source = state.video || state.image
-  if (!source) return null
+  if (!isMarble && !source) return null
 
-  const { width, height } = getDisplaySize(source)
+  let width: number, height: number
+  if (source) {
+    const size = getDisplaySize(source)
+    width = size.width
+    height = size.height
+  } else {
+    width = MARBLE_DEFAULT_SIZE
+    height = MARBLE_DEFAULT_SIZE
+  }
 
   return (
     <canvas

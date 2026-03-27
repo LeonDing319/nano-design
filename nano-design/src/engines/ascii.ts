@@ -207,4 +207,14 @@ export function renderAscii(
 
   ctx.globalAlpha = 1
   ctx.restore()
+
+  // --- Color tint overlay ---
+  if (params.colorTintOpacity > 0) {
+    ctx.save()
+    ctx.globalAlpha = params.colorTintOpacity / 100
+    ctx.globalCompositeOperation = params.colorTintBlend
+    ctx.fillStyle = params.colorTint
+    ctx.fillRect(0, 0, w, h)
+    ctx.restore()
+  }
 }
