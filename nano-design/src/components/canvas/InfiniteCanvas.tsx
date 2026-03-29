@@ -335,8 +335,8 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
       )}
 
       <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 50, display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Inspire button (always visible) */}
-          <button
+          {/* Inspire button (hidden for marble) */}
+          {state.activeEffect !== 'marble' && <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('nano:inspire'))}
             className="select-none"
@@ -372,7 +372,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
           >
             <Lightbulb style={{ width: 13, height: 13 }} />
             给我灵感
-          </button>
+          </button>}
         </div>
     </div>
   )
