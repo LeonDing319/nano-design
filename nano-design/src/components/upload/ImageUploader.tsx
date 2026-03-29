@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { exportPNG, exportJPEG, exportSVG, exportPDF, exportGIF, exportMP4, exportVideoMP4 } from '@/engines/exporter'
 import { renderGlitch } from '@/engines/glitch'
 import { renderAscii } from '@/engines/ascii'
+import { createMarbleEngine } from '@/engines/marble'
 import { useAppState } from '@/hooks/useEffectParams'
 import { playSound } from '@/utils/sound'
 import { getDisplaySize } from '@/components/canvas/EffectCanvas'
@@ -31,7 +32,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const t = useTranslations('upload')
   const tExport = useTranslations('export')
-  const hasSource = hasImage || !!state.video
+  const hasSource = hasImage || !!state.video || state.activeEffect === 'marble' || state.activeEffect === 'flow'
 
   const [exportFormat, setExportFormat] = useState<ExportFormat>('PNG')
   const [exporting, setExporting] = useState(false)
@@ -99,32 +100,55 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
 
   const makeRenderFrame = useCallback(() => {
     const source = state.video || state.image
-    if (!source) return null
+    const isMarble = state.activeEffect === 'marble'
 
-    const { width: rawW, height: rawH } = getDisplaySize(source)
-    // Ensure even dimensions for H.264 encoder compatibility
-    const width = rawW % 2 === 0 ? rawW : rawW + 1
-    const height = rawH % 2 === 0 ? rawH : rawH + 1
+    if (!source && !isMarble) return null
 
-    // Use offscreen canvas to avoid conflicts with the animation loop on the display canvas
+    let width: number, height: number
+    if (source) {
+      const { width: rawW, height: rawH } = getDisplaySize(source)
+      width = rawW % 2 === 0 ? rawW : rawW + 1
+      height = rawH % 2 === 0 ? rawH : rawH + 1
+    } else {
+      width = 800
+      height = 800
+    }
+
     const offscreen = document.createElement('canvas')
     offscreen.width = width
     offscreen.height = height
     const offCtx = offscreen.getContext('2d', { alpha: false })
     if (!offCtx) return null
 
+    let marbleEngine: ReturnType<typeof createMarbleEngine> = null
+    if (isMarble) {
+      marbleEngine = createMarbleEngine()
+      if (!marbleEngine) return null
+      marbleEngine.resize(width, height)
+    }
+
     const renderFrame = (frameIndex: number) => {
-      if (state.activeEffect === 'glitch') {
-        renderGlitch(offCtx, source, state.glitchParams, width, height, frameIndex)
+      if (isMarble && marbleEngine) {
+        marbleEngine.render(state.marbleParams, true)
+        marbleEngine.copyTo2D(offCtx, 0, 0, width, height)
+      } else if (state.activeEffect === 'glitch') {
+        renderGlitch(offCtx, source!, state.glitchParams, width, height, frameIndex)
       } else if (state.activeEffect === 'ascii') {
-        renderAscii(offCtx, source, state.asciiParams, width, height, frameIndex)
+        renderAscii(offCtx, source!, state.asciiParams, width, height, frameIndex)
       } else {
         offCtx.clearRect(0, 0, width, height)
-        offCtx.drawImage(source, 0, 0, width, height)
+        if (source) offCtx.drawImage(source, 0, 0, width, height)
       }
     }
 
-    return { canvas: offscreen, renderFrame }
+    const cleanup = () => {
+      if (marbleEngine) {
+        marbleEngine.destroy()
+        marbleEngine = null
+      }
+    }
+
+    return { canvas: offscreen, renderFrame, cleanup }
   }, [state])
 
   const doExport = useCallback(async (fmt: ExportFormat) => {
@@ -151,6 +175,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
             delay: Math.round(1000 / animFps),
             filename,
           })
+          result.cleanup?.()
           break
         }
         case 'MP4': {
@@ -162,6 +187,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
               filename,
               onProgress: setExportProgress,
             })
+            result.cleanup?.()
           } else {
             const result = makeRenderFrame()
             if (!result) break
@@ -171,6 +197,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
               filename,
               onProgress: setExportProgress,
             })
+            result.cleanup?.()
           }
           break
         }
