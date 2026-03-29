@@ -9,52 +9,28 @@ import { playSound } from '@/utils/sound'
 import { saveDesign } from '@/lib/saved-designs'
 import { SavedDesignsPanel } from '@/components/saved/SavedDesignsPanel'
 
-// 9x9 dither pattern — diagonal gradient from dark (top-left) to light (bottom-right)
-const PATTERN = [
-  [0, 0, 0, 0, 1, 0, 1, 1, 2],
-  [0, 0, 0, 1, 0, 1, 1, 2, 1],
-  [0, 0, 1, 0, 1, 1, 2, 1, 2],
-  [0, 1, 0, 1, 1, 2, 1, 2, 2],
-  [1, 0, 1, 1, 2, 1, 2, 2, 3],
-  [0, 1, 1, 2, 1, 2, 2, 3, 2],
-  [1, 1, 2, 1, 2, 2, 3, 2, 3],
-  [1, 2, 1, 2, 2, 3, 2, 3, 3],
-  [2, 1, 2, 2, 3, 2, 3, 3, 3],
-]
+type GradientColor = [string, string]
 
-type Palette = [string, string, string, string]
-
-function DitherIcon({ palette }: { palette: Palette }) {
-  const id = `sq-${palette[0].replace('#', '')}`
+function GradientIcon({ colors, id }: { colors: GradientColor; id: string }) {
+  const gradId = `grad-${id}`
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="30"
-      height="30"
-      viewBox="0 0 27 27"
-      shapeRendering="crispEdges"
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 27 27">
       <defs>
-        <clipPath id={id}>
-          <path d="M0 8C0 2.4 2.4 0 8 0h11c5.6 0 8 2.4 8 8v11c0 5.6-2.4 8-8 8H8c-5.6 0-8-2.4-8-8z" />
-        </clipPath>
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={colors[0]} />
+          <stop offset="100%" stopColor={colors[1]} />
+        </linearGradient>
       </defs>
-      <g clipPath={`url(#${id})`}>
-        {PATTERN.flatMap((row, y) =>
-          row.map((v, x) => (
-            <rect key={`${x}-${y}`} x={x * 3} y={y * 3} width="3" height="3" fill={palette[v]} />
-          ))
-        )}
-      </g>
+      <rect width="27" height="27" rx="8" fill={`url(#${gradId})`} />
     </svg>
   )
 }
 
-const EFFECTS: { id: EffectType; palette?: Palette; icon?: string }[] = [
-  { id: 'ascii',  icon: '/icon-ascii.png' },
-  { id: 'glitch', icon: '/icon-glitch.png' },
-  { id: 'marble', icon: '/icon-marble.png' },
-  { id: 'other',  palette: ['#1a3340', '#2d5c6b', '#5a8f9e', '#8fc2d1'] },
+const EFFECTS: { id: EffectType; gradient: GradientColor }[] = [
+  { id: 'ascii',  gradient: ['#1a4a8a', '#70b0f0'] },
+  { id: 'glitch', gradient: ['#1a4a8a', '#70b0f0'] },
+  { id: 'marble', gradient: ['#1a4a8a', '#70b0f0'] },
+  { id: 'flow',   gradient: ['#1a4a8a', '#70b0f0'] },
 ]
 
 export function NavRail() {
@@ -154,11 +130,7 @@ export function NavRail() {
                   if (!active) (e.currentTarget as HTMLDivElement).style.filter = 'grayscale(100%) brightness(0.5)'
                 }}
               >
-                {effect.icon ? (
-                  <img src={effect.icon} alt={effect.id} style={{ width: 30, height: 30, borderRadius: 6, objectFit: 'cover', display: 'block' }} />
-                ) : (
-                  <DitherIcon palette={effect.palette!} />
-                )}
+                <GradientIcon colors={effect.gradient} id={effect.id} />
               </div>
               <span style={{
                 fontSize: 9,

@@ -1,4 +1,4 @@
-export type EffectType = 'ascii' | 'glitch' | 'marble' | 'other'
+export type EffectType = 'ascii' | 'glitch' | 'marble' | 'flow'
 
 export interface GlitchParams {
   stripeDensity: number      // 0-50
@@ -8,9 +8,6 @@ export interface GlitchParams {
   rgbSplitDirection: number  // 0-360 角度
   rgbSplitDirectionAnim: boolean // 自动旋转 0->360->0
   clipShape: 'circle' | 'rectangle' | 'none'
-  duotone: boolean
-  duotoneLightColor: string
-  duotoneDarkColor: string
   dotSize: number            // 0-6 (0 表示关闭点阵)
   dotOpacity: number         // 0-0.7
   corruption: number         // 0-100 故障腐蚀强度
@@ -69,6 +66,20 @@ export interface MarbleParams {
   speed: number              // 0.1-3.0
 }
 
+export interface FlowParams {
+  amplitude: number          // 0-1 波浪振幅
+  frequency: number          // 1-100 波浪频率
+  complexity: number         // 0-5 复杂度
+  sharpness: number          // 1-20 锐度
+  yStart: number             // 0-1 安全区域起点
+  speed: number              // 0-1 动画速度
+  maskAngle: number          // -180 to 180 遮罩角度
+  waveAngle: number          // -180 to 180 波浪角度
+  spacerY: number            // 0-1 间隔带位置
+  spacerSize: number         // 0-0.5 间隔带大小
+  spacerFeather: number      // 0-0.2 间隔带羽化
+}
+
 export type ExportFormat = 'png' | 'gif' | 'html' | 'canvas-code'
 
 export interface VideoPlaybackState {
@@ -87,6 +98,7 @@ export interface AppState {
   glitchParams: GlitchParams
   asciiParams: AsciiParams
   marbleParams: MarbleParams
+  flowParams: FlowParams
   locale: 'zh'
   theme: 'dark'
   showAbout: boolean

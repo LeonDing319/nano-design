@@ -12,8 +12,9 @@ export function ControlGroup({ children, title, suffix }: ControlGroupProps) {
   return (
     <div
       style={{
-        border: '1px solid var(--color-border)',
+        backgroundColor: '#0f0f0f',
         borderRadius: 10,
+        border: '1px solid var(--color-border-faint)',
         padding: '12px',
       }}
       className="space-y-3"

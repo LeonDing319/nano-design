@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { Maximize } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
 import { EffectCanvas, getDisplaySize } from './EffectCanvas'
 import { useAppState } from '@/hooks/useEffectParams'
 import { useImageUpload } from '@/hooks/useImageUpload'
@@ -334,40 +334,19 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
         </div>
       )}
 
-      {hasContent && (
-        <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 50, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{
-            fontSize: 11,
-            fontWeight: 500,
-            color: 'rgba(255,255,255,0.5)',
-            fontVariantNumeric: 'tabular-nums',
-            userSelect: 'none',
-          }}>
-            {Math.round(viewport.zoom * 100)}%
-          </span>
+      <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 50, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Inspire button (always visible) */}
           <button
             type="button"
-            onClick={() => {
-              if (!containerRef.current) return
-              const rect = containerRef.current.getBoundingClientRect()
-              const { width: dw, height: dh } = source ? getDisplaySize(source) : { width: 800, height: 800 }
-              const fitZoom = Math.min(rect.width / dw, rect.height / dh)
-              const scaledW = dw * fitZoom
-              const scaledH = dh * fitZoom
-              setNodePos({ x: 0, y: 0 })
-              setViewport({
-                x: (rect.width - scaledW) / 2,
-                y: (rect.height - scaledH) / 2,
-                zoom: fitZoom,
-              })
-            }}
+            onClick={() => window.dispatchEvent(new CustomEvent('nano:inspire'))}
             className="select-none"
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 32,
+              gap: 5,
               height: 32,
+              padding: '0 14px',
               borderRadius: 9999,
               border: '1px solid rgba(255,255,255,0.12)',
               backgroundColor: 'rgba(255,255,255,0.06)',
@@ -377,6 +356,8 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
               color: 'rgba(255,255,255,0.85)',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
+              fontSize: 11,
+              fontWeight: 500,
             }}
             onMouseEnter={e => {
               e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.12)'
@@ -389,10 +370,10 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
               e.currentTarget.style.color = 'rgba(255,255,255,0.85)'
             }}
           >
-            <Maximize style={{ width: 14, height: 14 }} />
+            <Lightbulb style={{ width: 13, height: 13 }} />
+            给我灵感
           </button>
         </div>
-      )}
     </div>
   )
 }

@@ -234,7 +234,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
       {/* Preview banner */}
       <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '8px' }}>
         <img
-          src={state.activeEffect === 'ascii' ? '/preview-banner-ascii.png' : state.activeEffect === 'marble' ? '/preview-banner-marble.png' : state.activeEffect === 'other' ? '/preview-banner-other.png' : '/preview-banner.png'}
+          src={state.activeEffect === 'ascii' ? '/preview-banner-ascii.png' : state.activeEffect === 'marble' ? '/preview-banner-marble.png' : '/preview-banner.png'}
           alt="Preview"
           style={{
             width: '100%',
@@ -243,11 +243,11 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
             border: '1px solid var(--color-border-group)',
             borderRadius: '8px',
             opacity: 0.35,
-            filter: state.activeEffect === 'other' ? 'saturate(0.4)' : undefined,
+            filter: undefined,
             transition: 'opacity 0.3s ease, filter 0.3s ease',
           }}
           onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.filter = '' }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = '0.35'; if (state.activeEffect === 'other') e.currentTarget.style.filter = 'saturate(0.4)' }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '0.35' }}
         />
       </div>
 

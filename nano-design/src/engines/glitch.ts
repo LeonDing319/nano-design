@@ -9,78 +9,9 @@ function sourceHeight(src: ImageSource): number {
   return src instanceof HTMLVideoElement ? src.videoHeight : src.naturalHeight
 }
 
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
-  return [
-    parseInt(h.substring(0, 2), 16),
-    parseInt(h.substring(2, 4), 16),
-    parseInt(h.substring(4, 6), 16),
-  ]
-}
-
-// GPU 加速双色调：通过 SVG filter 实现，避免 getImageData/putImageData 的 CPU-GPU 同步
-let duotoneSvg: SVGSVGElement | null = null
-let duotoneLastLight = ''
-let duotoneLastDark = ''
-let duotoneTempCanvas: HTMLCanvasElement | null = null
 let dotMaskTileCanvas: HTMLCanvasElement | null = null
 let dotMaskTileKey = ''
 
-function ensureDuotoneFilter(lightHex: string, darkHex: string) {
-  if (duotoneSvg && duotoneLastLight === lightHex && duotoneLastDark === darkHex) return
-  const light = hexToRgb(lightHex)
-  const dark = hexToRgb(darkHex)
-
-  if (!duotoneSvg) {
-    duotoneSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    duotoneSvg.setAttribute('width', '0')
-    duotoneSvg.setAttribute('height', '0')
-    duotoneSvg.style.position = 'absolute'
-    duotoneSvg.style.pointerEvents = 'none'
-    document.body.appendChild(duotoneSvg)
-  }
-
-  // feColorMatrix saturate=0 → 灰度；feComponentTransfer linear → 灰度映射到双色
-  duotoneSvg.innerHTML = `<filter id="nano-duotone" color-interpolation-filters="sRGB">
-    <feColorMatrix type="saturate" values="0"/>
-    <feComponentTransfer>
-      <feFuncR type="linear" slope="${(light[0] - dark[0]) / 255}" intercept="${dark[0] / 255}"/>
-      <feFuncG type="linear" slope="${(light[1] - dark[1]) / 255}" intercept="${dark[1] / 255}"/>
-      <feFuncB type="linear" slope="${(light[2] - dark[2]) / 255}" intercept="${dark[2] / 255}"/>
-    </feComponentTransfer>
-  </filter>`
-  duotoneLastLight = lightHex
-  duotoneLastDark = darkHex
-}
-
-export function applyDuotone(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  lightHex: string,
-  darkHex: string
-) {
-  ensureDuotoneFilter(lightHex, darkHex)
-
-  // 复制当前画布内容到临时 canvas
-  if (!duotoneTempCanvas) duotoneTempCanvas = document.createElement('canvas')
-  if (duotoneTempCanvas.width !== width || duotoneTempCanvas.height !== height) {
-    duotoneTempCanvas.width = width
-    duotoneTempCanvas.height = height
-  }
-  const tc = duotoneTempCanvas.getContext('2d')!
-  tc.clearRect(0, 0, width, height)
-  tc.drawImage(ctx.canvas, 0, 0)
-
-  // 用 SVG filter 重新绘制（GPU 加速，无像素遍历）
-  ctx.save()
-  ctx.setTransform(1, 0, 0, 1, 0, 0)
-  ctx.clearRect(0, 0, width, height)
-  ctx.filter = 'url(#nano-duotone)'
-  ctx.drawImage(duotoneTempCanvas, 0, 0)
-  ctx.filter = 'none'
-  ctx.restore()
-}
 
 function ensureDotMaskTile(dotSize: number) {
   const clampedSize = Math.max(0.01, Math.min(6, dotSize))
@@ -502,10 +433,6 @@ export function renderGlitch(
         )
       }
     }
-  }
-
-  if (params.duotone) {
-    applyDuotone(ctx, ctx.canvas.width, ctx.canvas.height, params.duotoneLightColor, params.duotoneDarkColor)
   }
 
   applyDotMaskLayer(ctx, canvasWidth, canvasHeight, dotSize, dotOpacity)

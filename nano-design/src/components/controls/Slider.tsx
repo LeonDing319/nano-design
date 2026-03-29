@@ -1,8 +1,10 @@
 'use client'
 
-import { ReactNode, useRef, useState, useEffect, useLayoutEffect, useCallback } from 'react'
+import { ReactNode, useRef, useState, useLayoutEffect, useCallback } from 'react'
 
-const THUMB = 16
+const TRACK_HEIGHT = 36
+const THUMB_W = 3
+const THUMB_H = 20
 
 let audioCtx: AudioContext | null = null
 function getAudioCtx(): AudioContext {
@@ -15,7 +17,6 @@ const TICK_INTERVAL = 80
 
 type SoundType = 'bubble' | 'mech5' | 'drag' | 'fun5'
 
-// Continuous drag sound nodes (for displacement slider)
 let dragOsc: OscillatorNode | null = null
 let dragGain: GainNode | null = null
 
@@ -25,7 +26,6 @@ function startDragSound() {
     if (dragOsc) return
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
-    // Gentle filtered noise-like tone — smooth continuous hiss
     osc.type = 'sawtooth'
     osc.frequency.value = 180
     const filter = ctx.createBiquadFilter()
@@ -66,7 +66,6 @@ function playSound(type: SoundType) {
     g.connect(ctx.destination)
 
     switch (type) {
-      // 气泡（RGB Split 保留）
       case 'bubble': {
         const osc = ctx.createOscillator()
         osc.type = 'sine'
@@ -78,7 +77,6 @@ function playSound(type: SoundType) {
         osc.connect(g); osc.start(t); osc.stop(t + .055)
         break
       }
-      // 05 钟表滴答 → 条纹分层
       case 'mech5': {
         const buf = ctx.createBuffer(1, ~~(ctx.sampleRate * .008), ctx.sampleRate)
         const d = buf.getChannelData(0)
@@ -89,9 +87,7 @@ function playSound(type: SoundType) {
         s.connect(hp); hp.connect(g); s.start()
         break
       }
-      // drag 类型不走这里，由 startDragSound/stopDragSound 控制
       case 'drag': break
-      // 25 磁吸 → 随机 Seed
       case 'fun5': {
         const osc = ctx.createOscillator()
         osc.type = 'sine'
@@ -123,12 +119,18 @@ interface SliderProps {
   snapThreshold?: number
 }
 
+function quantize(v: number, min: number, max: number, step: number): number {
+  const raw = min + Math.round((v - min) / step) * step
+  return Math.min(max, Math.max(min, parseFloat(raw.toPrecision(10))))
+}
+
 export function Slider({ label, value, min, max, step = 1, onChange, disabled, suffix, sound = 'bubble', snapTo, snapThreshold }: SliderProps) {
   const threshold = snapThreshold ?? (max - min) * 0.03
   const percent = (value - min) / (max - min)
   const trackRef = useRef<HTMLDivElement>(null)
   const [trackWidth, setTrackWidth] = useState(0)
   const [dragging, setDragging] = useState(false)
+  const [hovered, setHovered] = useState(false)
 
   const handleChange = useCallback((v: number) => {
     if (snapTo !== undefined && Math.abs(v - snapTo) <= threshold) {
@@ -138,6 +140,32 @@ export function Slider({ label, value, min, max, step = 1, onChange, disabled, s
     onChange(v)
   }, [onChange, sound, snapTo, threshold])
 
+  const pointerToValue = useCallback((clientX: number) => {
+    if (!trackRef.current) return value
+    const rect = trackRef.current.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    return quantize(min + pct * (max - min), min, max, step)
+  }, [min, max, step, value])
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    if (disabled) return
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setDragging(true)
+    if (sound === 'drag') startDragSound()
+    handleChange(pointerToValue(e.clientX))
+  }, [disabled, handleChange, pointerToValue, sound])
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging) return
+    handleChange(pointerToValue(e.clientX))
+  }, [dragging, handleChange, pointerToValue])
+
+  const onPointerUp = useCallback(() => {
+    setDragging(false)
+    if (sound === 'drag') stopDragSound()
+  }, [sound])
+
   useLayoutEffect(() => {
     if (!trackRef.current) return
     setTrackWidth(trackRef.current.getBoundingClientRect().width)
@@ -146,73 +174,111 @@ export function Slider({ label, value, min, max, step = 1, onChange, disabled, s
     return () => ro.disconnect()
   }, [])
 
-  // Thumb center travels from THUMB/2 to trackWidth-THUMB/2
-  // so the circle is always fully within the track bounds
-  const thumbCenter = trackWidth > 0 ? THUMB / 2 + percent * (trackWidth - THUMB) : THUMB / 2
-  const thumbLeft = thumbCenter - THUMB / 2
-  const fillWidth = thumbCenter
+  const fillWidth = trackWidth > 0 ? percent * trackWidth : 0
+  const thumbLeft = trackWidth > 0 ? percent * (trackWidth - THUMB_W) : 0
+
+  const formattedValue = step < 1 ? value.toFixed(Math.max(0, -Math.floor(Math.log10(step)))) : Math.round(value)
 
   return (
-    <div className="flex flex-col gap-1.5">
-      {(label || suffix) && (
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            {label && <span className="text-neutral-300">{label}</span>}
-            {suffix}
-          </div>
-          <span className="text-neutral-500" style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
-            {step < 1 ? value.toFixed(Math.max(0, -Math.floor(Math.log10(step)))) : value}
-          </span>
-        </div>
-      )}
-
-      {/* Outer container — full width, used for input hit area */}
-      <div ref={trackRef} style={{ position: 'relative', height: THUMB, opacity: disabled ? 0.4 : 1, overflow: 'hidden', borderRadius: 9999 }}>
-        {/* Track — full width background */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Track container */}
+      <div
+        ref={trackRef}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        style={{
+          position: 'relative',
+          height: TRACK_HEIGHT,
+          flex: 1,
+          minWidth: 0,
+          opacity: disabled ? 0.4 : 1,
+          overflow: 'hidden',
+          borderRadius: 8,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          touchAction: 'none',
+        }}
+      >
+        {/* Background track */}
         <div style={{
-          position: 'absolute', inset: 0, borderRadius: 9999,
+          position: 'absolute', inset: 0,
           backgroundColor: 'var(--color-slider-track)',
           zIndex: 0,
         }} />
 
-        {/* Fill — from left edge to thumb center */}
+        {/* Fill */}
         <div style={{
           position: 'absolute', top: 0, left: 0,
           height: '100%',
-          width: trackWidth > 0 ? thumbLeft + THUMB / 2 : 0,
+          width: fillWidth,
           backgroundColor: 'var(--color-slider-fill)',
-          borderRadius: 9999,
           transition: dragging ? 'none' : 'width 0.05s',
           zIndex: 1,
         }} />
 
-        {/* Native input — full width, invisible */}
-        <input
-          type="range" min={min} max={max} step={step} value={value}
-          onChange={(e) => handleChange(Number(e.target.value))}
-          onMouseDown={() => { setDragging(true); if (sound === 'drag') startDragSound() }}
-          onMouseUp={() => { setDragging(false); if (sound === 'drag') stopDragSound() }}
-          onTouchStart={() => { setDragging(true); if (sound === 'drag') startDragSound() }}
-          onTouchEnd={() => { setDragging(false); if (sound === 'drag') stopDragSound() }}
-          disabled={disabled}
-          style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%',
-            margin: 0, opacity: 0, cursor: disabled ? 'not-allowed' : 'pointer', zIndex: 4,
-          }}
-        />
+        {/* Label (inside track, left) */}
+        {label && (
+          <span style={{
+            position: 'absolute',
+            left: 10,
+            top: 0,
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            fontSize: 13,
+            color: 'rgba(255,255,255,0.7)',
+            pointerEvents: 'none',
+            zIndex: 2,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: '60%',
+          }}>
+            {label}
+          </span>
+        )}
 
-        {/* Thumb — always fully visible, travels 0 to trackWidth-THUMB */}
+        {/* Value (inside track, right) */}
+        <span style={{
+          position: 'absolute',
+          right: 10,
+          top: 0,
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          fontSize: 13,
+          fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+          fontVariantNumeric: 'tabular-nums',
+          color: 'rgba(255,255,255,0.7)',
+          pointerEvents: 'none',
+          zIndex: 2,
+          whiteSpace: 'nowrap',
+        }}>
+          {formattedValue}
+        </span>
+
+        {/* Thumb bar */}
         <div style={{
-          position: 'absolute', top: 0,
+          position: 'absolute',
+          top: '50%',
+          transform: 'translateY(-50%)',
           left: thumbLeft,
-          width: THUMB, height: THUMB, borderRadius: '50%',
+          width: THUMB_W,
+          height: THUMB_H,
+          borderRadius: THUMB_W / 2,
           backgroundColor: 'var(--color-slider-thumb)',
-          boxShadow: 'var(--color-slider-thumb-shadow)',
-          transition: dragging ? 'none' : 'left 0.05s',
+          opacity: (hovered || dragging) ? 1 : 0,
+          transition: dragging ? 'opacity 0.15s' : 'left 0.05s, opacity 0.15s',
           pointerEvents: 'none',
           zIndex: 3,
         }} />
       </div>
+
+      {/* Suffix (outside track, right side) */}
+      {suffix && <div style={{ flexShrink: 0 }}>{suffix}</div>}
     </div>
   )
 }

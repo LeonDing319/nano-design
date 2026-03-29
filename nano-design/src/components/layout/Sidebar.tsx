@@ -9,13 +9,14 @@ import { PresetPicker } from '@/components/controls/PresetPicker'
 import { GLITCH_PRESETS, DEFAULT_GLITCH_PARAMS, randomizeGlitchParams } from '@/presets/glitch-presets'
 import { DEFAULT_ASCII_PARAMS, randomizeAsciiParams } from '@/presets/ascii-presets'
 import { DEFAULT_MARBLE_PARAMS, randomizeMarbleParams, randomizeMarbleColors } from '@/presets/marble-presets'
-import { GlitchParams, AsciiParams, MarbleParams } from '@/types'
+import { DEFAULT_FLOW_PARAMS, randomizeFlowParams } from '@/presets/flow-presets'
+import { EffectType, GlitchParams, AsciiParams, MarbleParams, FlowParams } from '@/types'
 import { getRandomPreset, getNextPreset, getRandomShowcasePreset, ShowcasePreset } from '@/presets/showcase-presets'
 import { ButtonGroup } from '@/components/controls/ButtonGroup'
 import { useTranslations } from 'next-intl'
 import { ControlGroup, SectionLabel } from '@/components/controls/ControlGroup'
 import { VideoControls } from '@/components/controls/VideoControls'
-import { AlignJustify, Shuffle, Layers, LayoutGrid, Move, ArrowDownUp, Palette, Type, Eye, Image, Play, Sun, Contrast, Grid, Waves, Dices, Lightbulb, RotateCcw, Bookmark } from 'lucide-react'
+import { AlignJustify, Shuffle, Layers, LayoutGrid, Move, ArrowDownUp, Palette, Type, Eye, Image, Play, Sun, Contrast, Grid, Waves, Dices } from 'lucide-react'
 import { playSound } from '@/utils/sound'
 import { saveDesign } from '@/lib/saved-designs'
 
@@ -42,6 +43,10 @@ export function Sidebar({ canvasRef }: SidebarProps) {
 
   const setMarble = (key: keyof MarbleParams, value: MarbleParams[keyof MarbleParams]) => {
     dispatch({ type: 'SET_MARBLE_PARAMS', payload: { [key]: value } })
+  }
+
+  const setFlow = (key: keyof FlowParams, value: FlowParams[keyof FlowParams]) => {
+    dispatch({ type: 'SET_FLOW_PARAMS', payload: { [key]: value } })
   }
 
   const tActions = useTranslations('actions')
@@ -157,6 +162,8 @@ export function Sidebar({ canvasRef }: SidebarProps) {
     const effect = state.activeEffect
     if (effect === 'marble') {
       dispatch({ type: 'SET_MARBLE_PRESET', payload: randomizeMarbleParams() })
+    } else if (effect === 'flow') {
+      dispatch({ type: 'SET_FLOW_PRESET', payload: randomizeFlowParams() })
     } else if (effect === 'ascii') {
       dispatch({ type: 'SET_ASCII_PRESET', payload: randomizeAsciiParams() })
     } else if (effect === 'glitch') {
@@ -166,11 +173,19 @@ export function Sidebar({ canvasRef }: SidebarProps) {
     playSound('BubblePop')
   }, [state.activeEffect, dispatch])
 
+  // 监听来自 InfiniteCanvas 的灵感事件
+  useEffect(() => {
+    const handler = () => handleInspire()
+    window.addEventListener('nano:inspire', handler)
+    return () => window.removeEventListener('nano:inspire', handler)
+  }, [handleInspire])
+
   const handleReset = useCallback(() => {
     const effect = state.activeEffect
     if (effect === 'ascii') dispatch({ type: 'SET_ASCII_PRESET', payload: DEFAULT_ASCII_PARAMS })
     else if (effect === 'glitch') dispatch({ type: 'SET_GLITCH_PRESET', payload: DEFAULT_GLITCH_PARAMS })
     else if (effect === 'marble') dispatch({ type: 'SET_MARBLE_PRESET', payload: DEFAULT_MARBLE_PARAMS })
+    else if (effect === 'flow') dispatch({ type: 'SET_FLOW_PRESET', payload: DEFAULT_FLOW_PARAMS })
     setActivePresetId('')
     playSound('BubblePop')
   }, [state.activeEffect, dispatch])
@@ -203,13 +218,76 @@ export function Sidebar({ canvasRef }: SidebarProps) {
         <ImageUploader hasImage={hasImage} canvasRef={canvasRef} />
 
         {state.video && (
-          <ControlGroup>
+          <div style={{ border: '1px solid var(--color-border-group)', borderRadius: 10, padding: 12 }}>
             <VideoControls video={state.video} />
-          </ControlGroup>
+          </div>
         )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0 }}>
+          <button
+            onClick={handleRandomize}
+            style={{
+              height: 28,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              fontWeight: 500,
+              color: '#4a4a4a',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#ededed')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#4a4a4a')}
+          >
+            {tActions('randomize')}
+          </button>
+          <button
+            onClick={handleReset}
+            style={{
+              height: 28,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              fontWeight: 500,
+              color: '#4a4a4a',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#ededed')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#4a4a4a')}
+          >
+            {tActions('reset')}
+          </button>
+          <button
+            onClick={handleSave}
+            style={{
+              height: 28,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 11,
+              fontWeight: 500,
+              color: saveStatus === 'saved' ? '#60a5fa' : '#4a4a4a',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => { if (saveStatus === 'idle') e.currentTarget.style.color = '#ededed' }}
+            onMouseLeave={e => { if (saveStatus === 'idle') e.currentTarget.style.color = '#4a4a4a' }}
+          >
+            {saveStatus === 'saved' ? tActions('saved') : saveStatus === 'duplicate' ? tActions('duplicate') : tActions('save')}
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pt-2.5 space-y-2.5">
+      <div className="flex-1 overflow-y-auto sidebar-scroll p-4 pt-2.5 space-y-2.5">
         {state.activeEffect === 'glitch' ? (
           <>
             <PresetPicker
@@ -581,141 +659,35 @@ export function Sidebar({ canvasRef }: SidebarProps) {
               )}
             </ControlGroup>
           </>
-        ) : (
-          <div className="space-y-3">
-            <Toggle
-              label={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Palette style={{ width: 13, height: 13, opacity: 0.7, flexShrink: 0 }} />{t('duotone')}</span>}
-              checked={state.glitchParams.duotone}
-              onChange={(v) => setGlitch('duotone', v)}
-              disabled={disabled}
-            />
-            {state.glitchParams.duotone && (
-              <div className="flex items-center gap-3" style={{ opacity: disabled ? 0.4 : 1 }}>
-                <label className="flex items-center gap-1.5 text-sm text-neutral-300">
-                  {t('duotoneLightColor')}
-                  <input
-                    type="color"
-                    value={state.glitchParams.duotoneLightColor}
-                    onChange={(e) => setGlitch('duotoneLightColor', e.target.value)}
-                    disabled={disabled}
-                    className="color-swatch"
-                  />
-                </label>
-                <label className="flex items-center gap-1.5 text-sm text-neutral-300">
-                  {t('duotoneDarkColor')}
-                  <input
-                    type="color"
-                    value={state.glitchParams.duotoneDarkColor}
-                    onChange={(e) => setGlitch('duotoneDarkColor', e.target.value)}
-                    disabled={disabled}
-                    className="color-swatch"
-                  />
-                </label>
-              </div>
-            )}
-          </div>
-        )}
+        ) : state.activeEffect === 'flow' ? (
+          <>
+            <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Waves style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('flow.sectionWave')}</span>}>
+              <Slider label={t('flow.amplitude')} value={state.flowParams.amplitude} min={0} max={1} step={0.01} onChange={(v) => setFlow('amplitude', v)} sound="mech5" />
+              <Slider label={t('flow.frequency')} value={state.flowParams.frequency} min={1} max={100} step={1} onChange={(v) => setFlow('frequency', v)} sound="mech5" />
+              <Slider label={t('flow.complexity')} value={state.flowParams.complexity} min={0} max={5} step={0.1} onChange={(v) => setFlow('complexity', v)} sound="mech5" />
+              <Slider label={t('flow.sharpness')} value={state.flowParams.sharpness} min={1} max={20} step={0.1} onChange={(v) => setFlow('sharpness', v)} sound="mech5" />
+              <Slider label={t('flow.waveAngle')} value={state.flowParams.waveAngle} min={-180} max={180} step={0.1} onChange={(v) => setFlow('waveAngle', v)} sound="mech5" />
+            </ControlGroup>
+
+            <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Layers style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('flow.sectionMask')}</span>}>
+              <Slider label={t('flow.yStart')} value={state.flowParams.yStart} min={0} max={1} step={0.01} onChange={(v) => setFlow('yStart', v)} sound="mech5" />
+              <Slider label={t('flow.maskAngle')} value={state.flowParams.maskAngle} min={-180} max={180} step={0.1} onChange={(v) => setFlow('maskAngle', v)} sound="mech5" />
+            </ControlGroup>
+
+            <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><AlignJustify style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('flow.sectionSpacer')}</span>}>
+              <Slider label={t('flow.spacerY')} value={state.flowParams.spacerY} min={0} max={1} step={0.01} onChange={(v) => setFlow('spacerY', v)} sound="mech5" />
+              <Slider label={t('flow.spacerSize')} value={state.flowParams.spacerSize} min={0} max={0.5} step={0.01} onChange={(v) => setFlow('spacerSize', v)} sound="mech5" />
+              <Slider label={t('flow.spacerFeather')} value={state.flowParams.spacerFeather} min={0} max={0.2} step={0.01} onChange={(v) => setFlow('spacerFeather', v)} sound="mech5" />
+            </ControlGroup>
+
+            <ControlGroup title={<span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Play style={{ width: 14, height: 14, opacity: 0.7, flexShrink: 0 }} />{t('sectionAnimation')}</span>}>
+              <Slider label={t('sectionAnimSpeed')} value={state.flowParams.speed} min={0} max={1} step={0.01} onChange={(v) => setFlow('speed', v)} sound="mech5" />
+            </ControlGroup>
+          </>
+        ) : null}
 
       </div>
 
-      {/* 底部固定操作栏 */}
-      {/* 底部固定操作栏 */}
-      <div className="flex-shrink-0 px-4 py-3" style={{ borderTop: '1px solid var(--color-border-faint)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
-          <button
-            onClick={handleInspire}
-            style={{
-              height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 5,
-              fontSize: 11,
-              fontWeight: 500,
-              color: 'var(--color-text-primary)',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--color-border-group)',
-              borderRadius: 6,
-              cursor: 'pointer',
-              transition: 'border-color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-text-muted)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
-          >
-            <Lightbulb style={{ width: 12, height: 12, flexShrink: 0 }} />
-            {tActions('inspire')}
-          </button>
-          <button
-            onClick={handleRandomize}
-            style={{
-              height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 5,
-              fontSize: 11,
-              fontWeight: 500,
-              color: 'var(--color-text-primary)',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--color-border-group)',
-              borderRadius: 6,
-              cursor: 'pointer',
-              transition: 'border-color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-text-muted)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
-          >
-            <Dices style={{ width: 12, height: 12, flexShrink: 0 }} />
-            {tActions('randomize')}
-          </button>
-          <button
-            onClick={handleReset}
-            style={{
-              height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 5,
-              fontSize: 11,
-              fontWeight: 500,
-              color: 'var(--color-text-primary)',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--color-border-group)',
-              borderRadius: 6,
-              cursor: 'pointer',
-              transition: 'border-color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-text-muted)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border-group)')}
-          >
-            <RotateCcw style={{ width: 12, height: 12, flexShrink: 0 }} />
-            {tActions('reset')}
-          </button>
-          <button
-            onClick={handleSave}
-            style={{
-              height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 5,
-              fontSize: 11,
-              fontWeight: 500,
-              color: saveStatus === 'saved' ? '#60a5fa' : 'var(--color-text-primary)',
-              backgroundColor: 'transparent',
-              border: `1px solid ${saveStatus === 'saved' ? '#60a5fa' : 'var(--color-border-group)'}`,
-              borderRadius: 6,
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={e => { if (saveStatus === 'idle') e.currentTarget.style.borderColor = 'var(--color-text-muted)' }}
-            onMouseLeave={e => { if (saveStatus === 'idle') e.currentTarget.style.borderColor = 'var(--color-border-group)' }}
-          >
-            <Bookmark style={{ width: 12, height: 12, flexShrink: 0, fill: saveStatus === 'saved' ? 'currentColor' : 'none' }} />
-            {saveStatus === 'saved' ? tActions('saved') : saveStatus === 'duplicate' ? tActions('duplicate') : tActions('save')}
-          </button>
-        </div>
-      </div>
     </aside>
   )
 }

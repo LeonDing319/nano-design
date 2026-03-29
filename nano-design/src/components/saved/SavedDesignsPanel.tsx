@@ -79,7 +79,7 @@ const EFFECT_LABELS: Record<EffectType, { zh: string; en: string }> = {
   ascii: { zh: 'ASCII', en: 'ASCII' },
   glitch: { zh: '故障艺术', en: 'Glitch' },
   marble: { zh: '液态', en: 'Marble' },
-  other: { zh: '其他效果', en: 'Other' },
+  flow: { zh: '流动', en: 'Flow' },
 }
 
 interface SavedDesignsPanelProps {
