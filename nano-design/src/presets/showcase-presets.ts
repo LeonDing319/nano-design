@@ -1,4 +1,4 @@
-import { EffectType, GlitchParams, AsciiParams, MarbleParams } from '@/types'
+import { EffectType, GlitchParams, AsciiParams, MarbleParams, FlowParams } from '@/types'
 import { DEFAULT_ASCII_PARAMS } from '@/presets/ascii-presets'
 
 export interface ShowcasePreset {
@@ -9,6 +9,7 @@ export interface ShowcasePreset {
   asciiParams?: AsciiParams
   glitchParams?: GlitchParams
   marbleParams?: MarbleParams
+  flowParams?: FlowParams
   zoom?: number // Canvas 缩放比例，如 0.6 = 60%
 }
 
@@ -50,6 +51,81 @@ export const SHOWCASE_PRESETS: ShowcasePreset[] = [
     effect: 'ascii',
     asciiParams: { ...DEFAULT_ASCII_PARAMS, charSet: 'dense', fontSize: 16, edgeEmphasis: 0, animated: true, animSpeed: 3.8, animIntensity: 43, animRandomness: 13 },
     zoom: 0.69,
+  },
+  {
+    id: 'marble-01', // 冰蓝液态
+    effect: 'marble',
+    marbleParams: {
+      colorMain: '#70c8ff',
+      colorLow: '#578ee5',
+      colorMid: '#004cff',
+      colorHigh: '#ffffff',
+      noiseScale: 1.10,
+      warpPower: 0.22,
+      fbmStrength: 1.35,
+      fbmDamping: 0.15,
+      blurRadius: 1.59,
+      veinIntensity: 0.59,
+      veinScale: 3.1,
+      veinColor: '#6bf5ff',
+      grain: 11,
+      animated: true,
+      speed: 0.7,
+    },
+  },
+  {
+    id: 'flow-03', // 暖光人像
+    image: '/presets/flow-03.jpg',
+    effect: 'flow',
+    flowParams: {
+      amplitude: 0.15,
+      frequency: 35,
+      complexity: 1.2,
+      sharpness: 7.3,
+      waveAngle: -3.3,
+      yStart: 0.42,
+      maskAngle: -59.4,
+      spacerY: 0.43,
+      spacerSize: 0.30,
+      spacerFeather: 0.08,
+      speed: 0.94,
+    },
+  },
+  {
+    id: 'flow-02', // 蓝光人像
+    image: '/presets/flow-02.jpg',
+    effect: 'flow',
+    flowParams: {
+      amplitude: 0.31,
+      frequency: 51,
+      complexity: 1.4,
+      sharpness: 5.5,
+      waveAngle: -154.4,
+      yStart: 0.53,
+      maskAngle: 113.0,
+      spacerY: 1.00,
+      spacerSize: 0.18,
+      spacerFeather: 0.03,
+      speed: 0.58,
+    },
+  },
+  {
+    id: 'flow-01', // 地球
+    image: '/presets/flow-01.jpg',
+    effect: 'flow',
+    flowParams: {
+      amplitude: 0.06,
+      frequency: 40,
+      complexity: 4.8,
+      sharpness: 3.9,
+      waveAngle: -58.4,
+      yStart: 0.40,
+      maskAngle: 16.9,
+      spacerY: 0.89,
+      spacerSize: 0.31,
+      spacerFeather: 0.08,
+      speed: 0.63,
+    },
   },
 ]
 

@@ -84,7 +84,10 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
     if (!ctx) return
 
     let width: number, height: number
-    if (source) {
+    if (isMarble) {
+      width = MARBLE_DEFAULT_SIZE
+      height = MARBLE_DEFAULT_SIZE
+    } else if (source) {
       const size = getDisplaySize(source)
       width = size.width
       height = size.height
@@ -168,7 +171,10 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
   if (!isMarble && !source) return null
 
   let width: number, height: number
-  if (source) {
+  if (isMarble) {
+    width = MARBLE_DEFAULT_SIZE
+    height = MARBLE_DEFAULT_SIZE
+  } else if (source) {
     const size = getDisplaySize(source)
     width = size.width
     height = size.height

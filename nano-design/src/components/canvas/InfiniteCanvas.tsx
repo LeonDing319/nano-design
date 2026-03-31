@@ -107,7 +107,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
   useEffect(() => {
     if (hasContent && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
-      const { width: dw, height: dh } = source ? getDisplaySize(source) : { width: 800, height: 800 }
+      const { width: dw, height: dh } = (source && !isMarble) ? getDisplaySize(source) : { width: 800, height: 800 }
       const fitZoom = Math.min(rect.width / dw, rect.height / dh)
       const scaledW = dw * fitZoom
       const scaledH = dh * fitZoom
@@ -371,7 +371,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
             }}
           >
             <Lightbulb style={{ width: 13, height: 13 }} />
-            给我灵感
+            灵感
           </button>}
         </div>
     </div>

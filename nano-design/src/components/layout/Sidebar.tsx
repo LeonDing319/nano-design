@@ -74,6 +74,7 @@ export function Sidebar({ canvasRef }: SidebarProps) {
       if (preset.asciiParams) dispatch({ type: 'SET_ASCII_PRESET', payload: preset.asciiParams })
       if (preset.glitchParams) dispatch({ type: 'SET_GLITCH_PRESET', payload: preset.glitchParams })
       if (preset.marbleParams) dispatch({ type: 'SET_MARBLE_PRESET', payload: preset.marbleParams })
+      if (preset.flowParams) dispatch({ type: 'SET_FLOW_PRESET', payload: preset.flowParams })
       if (preset.zoom) {
         // 延迟发送，确保在 InfiniteCanvas 的 fitZoom 之后生效
         setTimeout(() => {
@@ -102,6 +103,9 @@ export function Sidebar({ canvasRef }: SidebarProps) {
         requestAnimationFrame(applyParams)
       }
       img.src = preset.image
+    } else {
+      // 无素材的预设（如液态艺术），直接应用参数
+      applyParams()
     }
   }, [dispatch])
 
@@ -129,8 +133,11 @@ export function Sidebar({ canvasRef }: SidebarProps) {
   useEffect(() => {
     if (prevEffect.current === state.activeEffect) return
     prevEffect.current = state.activeEffect
-    if (!showcaseSourceEffect.current) return // 用户自己上传的素材，保留
-    if (showcaseSourceEffect.current === state.activeEffect) return // 切回同一效果
+    // 液态艺术不依赖素材，始终尝试加载预设
+    if (state.activeEffect !== 'marble') {
+      if (!showcaseSourceEffect.current) return // 用户自己上传的素材，保留
+      if (showcaseSourceEffect.current === state.activeEffect) return // 切回同一效果
+    }
 
     // 清除旧预设素材
     if (state.video) state.video.pause()
