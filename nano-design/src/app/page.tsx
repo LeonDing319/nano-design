@@ -27,78 +27,86 @@ export default function Home() {
               backgroundColor: 'var(--color-bg-canvas)',
             }}>
               <div style={{
-                maxWidth: 448,
+                maxWidth: 520,
                 width: '100%',
                 padding: '0 24px',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
                 gap: 24,
-                textAlign: 'center',
               }}>
-                <img
-                  src="/avatar.png"
-                  alt="Avatar"
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 10,
-                    objectFit: 'cover',
-                  }}
-                />
-                <h1 style={{
-                  fontSize: 22,
-                  fontWeight: 600,
-                  color: 'var(--color-text-primary)',
-                  margin: 0,
-                }}>
-                  {t('title')}
-                </h1>
-                <p style={{
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                  color: 'var(--color-text-muted)',
-                  margin: 0,
-                }}>
-                  {t('description')}
-                </p>
                 <div style={{
-                  width: '100%',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12,
-                  textAlign: 'left',
-                  fontSize: 12,
-                  color: 'var(--color-text-muted)',
+                  alignItems: 'center',
+                  gap: 20,
                 }}>
-                  {[
-                    { label: t('stack'), value: 'Next.js + TypeScript', href: undefined },
-                    { label: '小红书', value: '万有引力AI', href: 'https://xhslink.com/m/3Mg38eA7dVe' },
-                  ].map(({ label, value, href }) => (
-                    <div key={label} style={{
+                  <img
+                    src="/avatar.png"
+                    alt="Avatar"
+                    style={{
+                      width: 72,
+                      height: 72,
+                      borderRadius: 14,
+                      objectFit: 'cover',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <h1 style={{
+                      fontSize: 22,
+                      fontWeight: 600,
+                      color: 'var(--color-text-primary)',
+                      margin: 0,
+                    }}>
+                      {t('title')}
+                    </h1>
+                    <p style={{
+                      fontSize: 12,
+                      lineHeight: 1.6,
+                      color: 'var(--color-text-muted)',
+                      margin: 0,
+                    }}>
+                      {t('description')}
+                    </p>
+                  </div>
+                </div>
+                  <div style={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    textAlign: 'left',
+                    fontSize: 12,
+                    color: 'var(--color-text-muted)',
+                  }}>
+                    <div style={{
                       display: 'flex',
                       justifyContent: 'space-between',
                       borderBottom: '1px solid var(--color-border)',
                       paddingBottom: 8,
                     }}>
-                      <span>{label}</span>
-                      {href ? (
-                        <a href={href} target="_blank" rel="noopener noreferrer" style={{
-                          color: 'var(--color-text-primary)',
-                          textDecoration: 'none',
-                          transition: 'color 0.15s',
-                        }}
-                          onMouseEnter={e => (e.currentTarget.style.color = 'white')}
-                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-primary)')}
-                        >
-                          {value}
-                        </a>
-                      ) : (
-                        <span style={{ color: 'var(--color-text-primary)' }}>{value}</span>
-                      )}
+                      <span>{t('stack')}</span>
+                      <span style={{ color: 'var(--color-text-primary)' }}>Next.js + TypeScript</span>
                     </div>
-                  ))}
-                </div>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      borderBottom: '1px solid var(--color-border)',
+                      paddingBottom: 8,
+                    }}>
+                      <span>小红书</span>
+                      <a href="https://xhslink.com/m/3Mg38eA7dVe" target="_blank" rel="noopener noreferrer" style={{
+                        color: 'var(--color-text-primary)',
+                        textDecoration: 'none',
+                        transition: 'color 0.15s',
+                      }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'white')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-primary)')}
+                      >
+                        万有引力AI
+                      </a>
+                    </div>
+                  </div>
               </div>
             </div>
           ) : (
