@@ -234,13 +234,12 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
       const mwx = (me.clientX - rect.left - vv.x) / vv.zoom
       const mwy = (me.clientY - rect.top - vv.y) / vv.zoom
       const newNp = { x: mwx - ox, y: mwy - oy }
-      // 临时更新 ref 让 clamp 能拿到最新 nodePos
       nodePosRef.current = newNp
       setNodePos(newNp)
-      setViewport(v => clamp(v))
     }
     const onUp = () => {
       setCursor('default')
+      setViewport(v => clamp(v))
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
