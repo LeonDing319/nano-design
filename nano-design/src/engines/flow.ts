@@ -85,7 +85,8 @@ function compileShader(gl: WebGL2RenderingContext, type: number, source: string)
 }
 
 export interface FlowEngine {
-  render: (params: FlowParams) => void
+  render: (params: FlowParams, advanceTime?: boolean) => void
+  setTime: (t: number) => void
   resize: (w: number, h: number) => void
   setTexture: (source: TexImageSource) => void
   copyTo2D: (ctx: CanvasRenderingContext2D, dx: number, dy: number, dw: number, dh: number) => void
@@ -147,8 +148,11 @@ export function createFlowEngine(): FlowEngine | null {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source)
   }
 
-  function render(params: FlowParams) {
-    const advanceTime = true
+  function setTime(t: number) {
+    animTime = t
+  }
+
+  function render(params: FlowParams, advanceTime = true) {
     if (advanceTime) {
       const now = performance.now()
       animTime += ((now - lastFrameTime) / 1000) * params.speed
@@ -199,5 +203,5 @@ export function createFlowEngine(): FlowEngine | null {
     if (vao) gl.deleteVertexArray(vao)
   }
 
-  return { render, resize, setTexture, copyTo2D, destroy, canvas }
+  return { render, setTime, resize, setTexture, copyTo2D, destroy, canvas }
 }

@@ -8,6 +8,7 @@ import { exportPNG, exportJPEG, exportSVG, exportPDF, exportGIF, exportMP4, expo
 import { renderGlitch } from '@/engines/glitch'
 import { renderAscii } from '@/engines/ascii'
 import { createMarbleEngine } from '@/engines/marble'
+import { createFlowEngine } from '@/engines/flow'
 import { useAppState } from '@/hooks/useEffectParams'
 import { playSound } from '@/utils/sound'
 import { getDisplaySize } from '@/components/canvas/EffectCanvas'
@@ -52,6 +53,8 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
     )
   ) || (
     state.activeEffect === 'ascii' && state.asciiParams.animated
+  ) || (
+    state.activeEffect === 'flow'
   )
 
   const hasVideo = !!state.video
@@ -101,6 +104,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
   const makeRenderFrame = useCallback(() => {
     const source = state.video || state.image
     const isMarble = state.activeEffect === 'marble'
+    const isFlow = state.activeEffect === 'flow'
 
     if (!source && !isMarble) return null
 
@@ -127,10 +131,22 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
       marbleEngine.resize(width, height)
     }
 
+    let flowEngine: ReturnType<typeof createFlowEngine> = null
+    if (isFlow && source) {
+      flowEngine = createFlowEngine()
+      if (!flowEngine) return null
+      flowEngine.resize(width, height)
+      flowEngine.setTexture(source)
+    }
+
     const renderFrame = (frameIndex: number) => {
       if (isMarble && marbleEngine) {
         marbleEngine.render(state.marbleParams, true)
         marbleEngine.copyTo2D(offCtx, 0, 0, width, height)
+      } else if (isFlow && flowEngine) {
+        flowEngine.setTime(frameIndex / 30 * state.flowParams.speed)
+        flowEngine.render(state.flowParams, false)
+        flowEngine.copyTo2D(offCtx, 0, 0, width, height)
       } else if (state.activeEffect === 'glitch') {
         renderGlitch(offCtx, source!, state.glitchParams, width, height, frameIndex)
       } else if (state.activeEffect === 'ascii') {
@@ -145,6 +161,10 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
       if (marbleEngine) {
         marbleEngine.destroy()
         marbleEngine = null
+      }
+      if (flowEngine) {
+        flowEngine.destroy()
+        flowEngine = null
       }
     }
 
@@ -261,7 +281,7 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
       {/* Preview banner */}
       <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '8px' }}>
         <img
-          src={state.activeEffect === 'ascii' ? '/preview-banner-ascii.png' : state.activeEffect === 'marble' ? '/preview-banner-marble.png' : '/preview-banner.png'}
+          src={state.activeEffect === 'ascii' ? '/preview-banner-ascii.png' : state.activeEffect === 'marble' ? '/preview-banner-marble.png' : state.activeEffect === 'flow' ? '/preview-banner-flow.png' : '/preview-banner.png'}
           alt="Preview"
           style={{
             width: '100%',

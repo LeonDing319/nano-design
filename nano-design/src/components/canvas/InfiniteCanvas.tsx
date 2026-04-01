@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { Lightbulb } from 'lucide-react'
+import { Lightbulb, Eye } from 'lucide-react'
 import { EffectCanvas, getDisplaySize } from './EffectCanvas'
 import { useAppState } from '@/hooks/useEffectParams'
 import { useImageUpload } from '@/hooks/useImageUpload'
@@ -336,17 +336,25 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
 
       <div style={{ position: 'absolute', bottom: 16, right: 16, zIndex: 50, display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* Inspire button (hidden for marble) */}
-          {state.activeEffect !== 'marble' && <button
+          {/* Show original button (hidden for marble, only when image exists) */}
+          {state.activeEffect !== 'marble' && (state.image || state.video) && <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent('nano:inspire'))}
+            onMouseDown={() => window.dispatchEvent(new CustomEvent('nano:show-original'))}
+            onMouseUp={() => window.dispatchEvent(new CustomEvent('nano:hide-original'))}
+            onMouseLeave={e => {
+              window.dispatchEvent(new CustomEvent('nano:hide-original'))
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+            }}
+            onTouchStart={() => window.dispatchEvent(new CustomEvent('nano:show-original'))}
+            onTouchEnd={() => window.dispatchEvent(new CustomEvent('nano:hide-original'))}
             className="select-none"
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 5,
-              height: 32,
-              padding: '0 14px',
+              width: 35,
+              height: 35,
               borderRadius: 9999,
               border: '1px solid rgba(255,255,255,0.12)',
               backgroundColor: 'rgba(255,255,255,0.06)',
@@ -356,7 +364,35 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
               color: 'rgba(255,255,255,0.85)',
               cursor: 'pointer',
               transition: 'all 0.2s ease',
-              fontSize: 11,
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.12)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)'
+            }}
+          >
+            <Eye style={{ width: 14, height: 14 }} />
+          </button>}
+          {state.activeEffect !== 'marble' && <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('nano:inspire'))}
+            className="select-none"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              height: 35,
+              padding: '0 15px',
+              borderRadius: 9999,
+              border: '1px solid rgba(255,255,255,0.12)',
+              backgroundColor: 'rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(16px) saturate(1.4)',
+              WebkitBackdropFilter: 'blur(16px) saturate(1.4)',
+              boxShadow: 'inset 0 0.5px 0 rgba(255,255,255,0.15), 0 2px 8px rgba(0,0,0,0.3)',
+              color: 'rgba(255,255,255,0.85)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              fontSize: 12,
               fontWeight: 500,
             }}
             onMouseEnter={e => {
@@ -370,7 +406,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
               e.currentTarget.style.color = 'rgba(255,255,255,0.85)'
             }}
           >
-            <Lightbulb style={{ width: 13, height: 13 }} />
+            <Lightbulb style={{ width: 14, height: 14 }} />
             灵感
           </button>}
         </div>

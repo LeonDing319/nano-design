@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef, memo } from 'react'
+import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef, memo, useState } from 'react'
 import { useAppState } from '@/hooks/useEffectParams'
 import { renderGlitch } from '@/engines/glitch'
 import { renderAscii } from '@/engines/ascii'
@@ -26,8 +26,20 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
   const lastSizeRef = useRef({ w: 0, h: 0 })
   const marbleEngineRef = useRef<MarbleEngine | null>(null)
   const flowEngineRef = useRef<FlowEngine | null>(null)
+  const [showOriginal, setShowOriginal] = useState(false)
 
   useImperativeHandle(ref, () => canvasRef.current!, [])
+
+  useEffect(() => {
+    const onShow = () => setShowOriginal(true)
+    const onHide = () => setShowOriginal(false)
+    window.addEventListener('nano:show-original', onShow)
+    window.addEventListener('nano:hide-original', onHide)
+    return () => {
+      window.removeEventListener('nano:show-original', onShow)
+      window.removeEventListener('nano:hide-original', onHide)
+    }
+  }, [])
 
   // 管理 marble WebGL 引擎生命周期
   useEffect(() => {
@@ -108,7 +120,10 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-    if (isMarble) {
+    if (showOriginal && source && !isMarble) {
+      ctx.clearRect(0, 0, width, height)
+      ctx.drawImage(source, 0, 0, width, height)
+    } else if (isMarble) {
       const engine = marbleEngineRef.current
       if (!engine) return
       engine.resize(pw, ph)
@@ -129,7 +144,7 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
       renderAscii(ctx, source!, state.asciiParams, width, height, frameRef.current)
     }
 
-  }, [state])
+  }, [state, showOriginal])
 
   useEffect(() => {
     const isMarble = state.activeEffect === 'marble'
@@ -164,7 +179,7 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
       const raf = requestAnimationFrame(() => render())
       return () => cancelAnimationFrame(raf)
     }
-  }, [state, render])
+  }, [state, render, showOriginal])
 
   const isMarble = state.activeEffect === 'marble'
   const source = state.video || state.image

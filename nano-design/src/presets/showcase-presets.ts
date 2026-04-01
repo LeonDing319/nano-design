@@ -53,6 +53,120 @@ export const SHOWCASE_PRESETS: ShowcasePreset[] = [
     zoom: 0.69,
   },
   {
+    id: 'ascii-07', // 赛博街景
+    image: '/presets/ascii-07.jpg',
+    effect: 'ascii',
+    asciiParams: { ...DEFAULT_ASCII_PARAMS, charSet: 'dense', fontSize: 16, coverage: 100, edgeEmphasis: 100, charOpacity: 55, animated: true, animSpeed: 3.9, animIntensity: 30, animRandomness: 0 },
+  },
+  {
+    id: 'glitch-06', // 绿隧独行
+    image: '/presets/glitch-06.jpg',
+    effect: 'glitch',
+    glitchParams: {
+      rgbSplit: 12,
+      rgbSplitDirection: 196,
+      rgbSplitDirectionAnim: true,
+      displacement: 18,
+      stripeDensity: 28,
+      verticalSpeed: 0,
+      clipShape: 'none',
+      dotSize: 0,
+      dotOpacity: 0.62,
+      corruption: 15,
+      scanlines: false,
+    },
+  },
+  {
+    id: 'glitch-05', // 红雾剪影
+    image: '/presets/glitch-05.jpg',
+    effect: 'glitch',
+    glitchParams: {
+      rgbSplit: 25,
+      rgbSplitDirection: 171,
+      rgbSplitDirectionAnim: false,
+      displacement: 4,
+      stripeDensity: 28,
+      verticalSpeed: 1,
+      clipShape: 'none',
+      dotSize: 0,
+      dotOpacity: 0.46,
+      corruption: 16,
+      scanlines: true,
+    },
+  },
+  {
+    id: 'glitch-04', // 少女胸像
+    image: '/presets/glitch-04.webp',
+    effect: 'glitch',
+    glitchParams: {
+      rgbSplit: 0,
+      rgbSplitDirection: 0,
+      rgbSplitDirectionAnim: false,
+      displacement: 4,
+      stripeDensity: 30,
+      verticalSpeed: 5,
+      clipShape: 'none',
+      dotSize: 0,
+      dotOpacity: 0,
+      corruption: 0,
+      scanlines: true,
+    },
+  },
+  {
+    id: 'glitch-03', // 石膏像
+    image: '/presets/glitch-03.webp',
+    effect: 'glitch',
+    glitchParams: {
+      rgbSplit: 25,
+      rgbSplitDirection: 0,
+      rgbSplitDirectionAnim: true,
+      displacement: 10,
+      stripeDensity: 5,
+      verticalSpeed: 14,
+      clipShape: 'none',
+      dotSize: 0,
+      dotOpacity: 0,
+      corruption: 0,
+      scanlines: false,
+    },
+  },
+  {
+    id: 'glitch-02', // 红厅对峙
+    image: '/presets/glitch-02.jpg',
+    effect: 'glitch',
+    glitchParams: {
+      rgbSplit: 3,
+      rgbSplitDirection: 99,
+      rgbSplitDirectionAnim: true,
+      displacement: 2,
+      stripeDensity: 7,
+      verticalSpeed: 9,
+      clipShape: 'none',
+      dotSize: 2.4,
+      dotOpacity: 0.03,
+      corruption: 27,
+      scanlines: false,
+    },
+  },
+  {
+    id: 'glitch-01', // 雨巷追踪
+    image: '/presets/glitch-01.jpg',
+    effect: 'glitch',
+    glitchParams: {
+      rgbSplit: 4,
+      rgbSplitDirection: 0,
+      rgbSplitDirectionAnim: false,
+      displacement: 2,
+      stripeDensity: 20,
+      verticalSpeed: 12,
+      clipShape: 'none',
+      dotSize: 0,
+      dotOpacity: 0,
+      corruption: 0,
+      scanlines: true,
+    },
+  },
+  {
     id: 'marble-01', // 冰蓝液态
     effect: 'marble',
     marbleParams: {
@@ -71,6 +185,42 @@ export const SHOWCASE_PRESETS: ShowcasePreset[] = [
       grain: 11,
       animated: true,
       speed: 0.7,
+    },
+  },
+  {
+    id: 'flow-05', // 霓虹侧脸
+    image: '/presets/flow-05.jpg',
+    effect: 'flow',
+    flowParams: {
+      amplitude: 0.04,
+      frequency: 45,
+      complexity: 1.6,
+      sharpness: 9.7,
+      waveAngle: 152.8,
+      yStart: 0.62,
+      maskAngle: 24.7,
+      spacerY: 0.67,
+      spacerSize: 0.08,
+      spacerFeather: 0.05,
+      speed: 1.00,
+    },
+  },
+  {
+    id: 'flow-04', // 蓝光女生
+    image: '/presets/flow-04.jpg',
+    effect: 'flow',
+    flowParams: {
+      amplitude: 0.27,
+      frequency: 85,
+      complexity: 2.1,
+      sharpness: 3.0,
+      waveAngle: 180.0,
+      yStart: 0.51,
+      maskAngle: 57.9,
+      spacerY: 1.00,
+      spacerSize: 0.50,
+      spacerFeather: 0.20,
+      speed: 0.89,
     },
   },
   {
