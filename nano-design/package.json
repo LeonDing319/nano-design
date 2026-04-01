@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "gif.js": "^0.2.0",
     "lucide-react": "^0.575.0",
     "mp4-muxer": "^5.2.2",
