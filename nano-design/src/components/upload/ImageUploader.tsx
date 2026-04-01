@@ -55,6 +55,8 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
     state.activeEffect === 'ascii' && state.asciiParams.animated
   ) || (
     state.activeEffect === 'flow'
+  ) || (
+    state.activeEffect === 'marble' && state.marbleParams.animated
   )
 
   const hasVideo = !!state.video
@@ -109,7 +111,15 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
     if (!source && !isMarble) return null
 
     let width: number, height: number
-    if (source) {
+    if (isMarble) {
+      // marble 模式：固定正方形，用 DPR 缩放与预览一致
+      const dpr = window.devicePixelRatio || 1
+      const base = 800
+      width = Math.round(base * dpr)
+      height = Math.round(base * dpr)
+      if (width % 2 !== 0) width += 1
+      if (height % 2 !== 0) height += 1
+    } else if (source) {
       const { width: rawW, height: rawH } = getDisplaySize(source)
       width = rawW % 2 === 0 ? rawW : rawW + 1
       height = rawH % 2 === 0 ? rawH : rawH + 1
@@ -124,24 +134,43 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
     const offCtx = offscreen.getContext('2d', { alpha: false })
     if (!offCtx) return null
 
+    // 复用预览引擎（保持相同噪声纹理和动画时间），没有则新建
     let marbleEngine: ReturnType<typeof createMarbleEngine> = null
+    let marbleOwned = false
     if (isMarble) {
-      marbleEngine = createMarbleEngine()
+      marbleEngine = canvasRef?.current && (canvasRef.current as any).__marbleEngine || null
+      if (!marbleEngine) {
+        marbleEngine = createMarbleEngine()
+        marbleOwned = true
+      }
       if (!marbleEngine) return null
       marbleEngine.resize(width, height)
     }
 
     let flowEngine: ReturnType<typeof createFlowEngine> = null
+    let flowOwned = false
     if (isFlow && source) {
-      flowEngine = createFlowEngine()
+      flowEngine = canvasRef?.current && (canvasRef.current as any).__flowEngine || null
+      if (!flowEngine) {
+        flowEngine = createFlowEngine()
+        flowOwned = true
+      }
       if (!flowEngine) return null
       flowEngine.resize(width, height)
       flowEngine.setTexture(source)
     }
 
+    const marbleStartTime = marbleEngine?.getTime?.() ?? 0
+
     const renderFrame = (frameIndex: number) => {
       if (isMarble && marbleEngine) {
-        marbleEngine.render(state.marbleParams, true)
+        const t = marbleStartTime + (frameIndex / animFps) * state.marbleParams.speed * 0.85
+        if (marbleEngine.setTime) {
+          marbleEngine.setTime(t)
+          marbleEngine.render(state.marbleParams, false)
+        } else {
+          marbleEngine.render(state.marbleParams, true)
+        }
         marbleEngine.copyTo2D(offCtx, 0, 0, width, height)
       } else if (isFlow && flowEngine) {
         flowEngine.setTime(frameIndex / 30 * state.flowParams.speed)
@@ -158,11 +187,11 @@ export function ImageUploader({ hasImage, canvasRef }: ImageUploaderProps) {
     }
 
     const cleanup = () => {
-      if (marbleEngine) {
+      if (marbleEngine && marbleOwned) {
         marbleEngine.destroy()
         marbleEngine = null
       }
-      if (flowEngine) {
+      if (flowEngine && flowOwned) {
         flowEngine.destroy()
         flowEngine = null
       }

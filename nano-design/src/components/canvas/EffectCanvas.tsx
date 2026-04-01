@@ -129,7 +129,8 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
       engine.resize(pw, ph)
       engine.render(state.marbleParams, state.marbleParams.animated)
       ctx.clearRect(0, 0, width, height)
-      engine.copyTo2D(ctx, 0, 0, width, height)
+      engine.copyTo2D(ctx, 0, 0, width, height);
+      (canvas as any).__marbleEngine = engine
     } else if (isFlow) {
       const engine = flowEngineRef.current
       if (!engine || !source) return
@@ -137,7 +138,8 @@ export const EffectCanvas = memo(forwardRef<HTMLCanvasElement>(function EffectCa
       engine.setTexture(source)
       engine.render(state.flowParams)
       ctx.clearRect(0, 0, width, height)
-      engine.copyTo2D(ctx, 0, 0, width, height)
+      engine.copyTo2D(ctx, 0, 0, width, height);
+      (canvas as any).__flowEngine = engine
     } else if (state.activeEffect === 'glitch') {
       renderGlitch(ctx, source!, state.glitchParams, width, height, frameRef.current)
     } else if (state.activeEffect === 'ascii') {

@@ -237,6 +237,8 @@ export interface MarbleEngine {
   render: (params: MarbleParams, advanceTime: boolean) => void
   resize: (w: number, h: number) => void
   copyTo2D: (ctx: CanvasRenderingContext2D, dx: number, dy: number, dw: number, dh: number) => void
+  getTime: () => number
+  setTime: (t: number) => void
   destroy: () => void
   canvas: HTMLCanvasElement
 }
@@ -349,5 +351,8 @@ export function createMarbleEngine(): MarbleEngine | null {
     if (vao) gl.deleteVertexArray(vao)
   }
 
-  return { render, resize, copyTo2D, destroy, canvas }
+  function getTime() { return animTime }
+  function setTime(t: number) { animTime = t; lastFrameTime = performance.now() }
+
+  return { render, resize, copyTo2D, getTime, setTime, destroy, canvas }
 }

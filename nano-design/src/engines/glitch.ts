@@ -79,6 +79,11 @@ function applyCorruption(
 ) {
   if (intensity <= 0) return
 
+  // 从原图读取而非 ctx.canvas，避免 DPR 缩放导致源坐标与物理像素不一致，
+  // 使预览和导出的腐蚀效果保持一致。
+  const natW = sourceWidth(sourceImage)
+  const natH = sourceHeight(sourceImage)
+
   const blockCount = Math.floor(intensity / 2)
   for (let i = 0; i < blockCount; i++) {
     const r = stable ? (k: number) => seededRandom(i * 5 + k, intensity) : () => Math.random()
@@ -88,8 +93,8 @@ function applyCorruption(
     const sh = r(3) * (imgH / 10)
     const dx = sx + (r(4) - 0.5) * intensity * 2
     ctx.drawImage(
-      ctx.canvas,
-      imgX + sx, imgY + sy, sw, sh,
+      sourceImage,
+      (sx / imgW) * natW, (sy / imgH) * natH, (sw / imgW) * natW, (sh / imgH) * natH,
       imgX + dx, imgY + sy, sw, sh
     )
   }

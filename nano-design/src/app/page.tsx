@@ -85,7 +85,7 @@ export default function Home() {
                       paddingBottom: 8,
                     }}>
                       <span>{t('stack')}</span>
-                      <span style={{ color: 'var(--color-text-primary)' }}>Next.js + TypeScript</span>
+                      <span style={{ color: 'var(--color-text-primary)' }}>Next.js + TypeScript + Canvas API</span>
                     </div>
                     <div style={{
                       display: 'flex',
