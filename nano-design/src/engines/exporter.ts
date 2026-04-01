@@ -153,7 +153,7 @@ export async function exportMP4(
 
     // Throttle encoding queue
     while (encoder.encodeQueueSize > 5) {
-      if (encoder.state === 'closed') break
+      if ((encoder.state as string) === 'closed') break
       await new Promise(r => setTimeout(r, 1))
     }
 
@@ -244,7 +244,7 @@ export async function exportVideoMP4(
     frame.close()
 
     while (encoder.encodeQueueSize > 5) {
-      if (encoder.state === 'closed') break
+      if ((encoder.state as string) === 'closed') break
       await new Promise(r => setTimeout(r, 1))
     }
 

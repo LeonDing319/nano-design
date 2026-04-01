@@ -245,7 +245,7 @@ export interface MarbleEngine {
 
 export function createMarbleEngine(): MarbleEngine | null {
   const canvas = document.createElement('canvas')
-  const gl = canvas.getContext('webgl2', { preserveDrawingBuffer: true, premultipliedAlpha: false })
+  const gl = canvas.getContext('webgl2', { preserveDrawingBuffer: true, premultipliedAlpha: false })!
   if (!gl) return null
 
   const vert = compileShader(gl, gl.VERTEX_SHADER, VERT_SHADER)
