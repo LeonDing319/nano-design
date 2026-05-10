@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Bookmark } from 'lucide-react'
+import { Bookmark, Languages } from 'lucide-react'
 import { useAppState } from '@/hooks/useEffectParams'
 import { useTranslations } from 'next-intl'
 import { EffectType } from '@/types'
@@ -148,6 +148,50 @@ export function NavRail() {
 
       {/* mt-auto 把下面内容推到底部 */}
       <div style={{ marginTop: 'auto' }} />
+
+      {/* 语言切换按钮 */}
+      <button
+        onClick={() => {
+          dispatch({ type: 'SET_LOCALE', payload: state.locale === 'zh' ? 'en' : 'zh' })
+          playSound('Frog')
+        }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
+          padding: 0,
+          border: 'none',
+          background: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        <div
+          style={{
+            borderRadius: 8,
+            padding: 4,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'color 0.15s',
+            color: 'var(--color-text-muted)',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--color-text-secondary)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--color-text-muted)' }}
+        >
+          <Languages style={{ width: 20, height: 20 }} />
+        </div>
+        <span style={{
+          fontSize: 9,
+          fontWeight: 400,
+          color: 'var(--color-text-muted)',
+          transition: 'color 0.15s',
+          letterSpacing: 0.3,
+          lineHeight: 1,
+        }}>
+          {state.locale === 'zh' ? '中文' : 'English'}
+        </span>
+      </button>
 
       {/* Saved 按钮 */}
       <button

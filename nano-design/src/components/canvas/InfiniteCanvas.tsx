@@ -66,6 +66,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
   const { state, dispatch } = useAppState()
   const { handleUpload } = useImageUpload()
   const t = useTranslations('upload')
+  const tActions = useTranslations('actions')
   const containerRef = useRef<HTMLDivElement>(null)
 
   const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
@@ -406,7 +407,7 @@ export function InfiniteCanvas({ canvasRef }: InfiniteCanvasProps) {
             }}
           >
             <Lightbulb style={{ width: 14, height: 14 }} />
-            灵感
+            {tActions('inspire')}
           </button>}
         </div>
     </div>

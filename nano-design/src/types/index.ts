@@ -99,7 +99,7 @@ export interface AppState {
   asciiParams: AsciiParams
   marbleParams: MarbleParams
   flowParams: FlowParams
-  locale: 'zh'
+  locale: 'zh' | 'en'
   theme: 'dark'
   showAbout: boolean
 }

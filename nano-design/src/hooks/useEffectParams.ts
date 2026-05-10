@@ -21,6 +21,7 @@ type Action =
   | { type: 'SET_FLOW_PARAMS'; payload: Partial<FlowParams> }
   | { type: 'SET_FLOW_PRESET'; payload: FlowParams }
   | { type: 'SET_SHOW_ABOUT'; payload: boolean }
+  | { type: 'SET_LOCALE'; payload: 'zh' | 'en' }
 
 export const DEFAULT_VIDEO_PLAYBACK: VideoPlaybackState = {
   playing: false,
@@ -72,6 +73,8 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, flowParams: action.payload }
     case 'SET_SHOW_ABOUT':
       return { ...state, showAbout: action.payload }
+    case 'SET_LOCALE':
+      return { ...state, locale: action.payload }
     default:
       return state
   }
@@ -90,6 +93,10 @@ export function useAppState() {
   return context
 }
 
-export function useAppReducer() {
-  return useReducer(appReducer, initialAppState)
+export function useAppReducer(initialLocale?: 'zh' | 'en') {
+  return useReducer(
+    appReducer,
+    initialAppState,
+    (base): AppState => initialLocale ? { ...base, locale: initialLocale } : base,
+  )
 }

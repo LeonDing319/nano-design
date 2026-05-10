@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { cookies } from 'next/headers'
 import { Analytics } from '@vercel/analytics/react'
 import { AppProvider } from '@/components/AppProvider'
+import { defaultLocale, isLocale, localeCookieName } from '@/i18n/config'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -11,15 +13,19 @@ export const metadata: Metadata = {
   description: 'Image Art Effect Generator',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const cookieStore = await cookies()
+  const cookieValue = cookieStore.get(localeCookieName)?.value
+  const locale = isLocale(cookieValue) ? cookieValue : defaultLocale
+
   return (
-    <html lang="zh">
+    <html lang={locale}>
       <body className={inter.className}>
-        <AppProvider>
+        <AppProvider initialLocale={locale}>
           {children}
         </AppProvider>
         <Analytics />
